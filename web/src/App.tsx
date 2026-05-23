@@ -97,11 +97,8 @@ export function App() {
 
   return (
     <main className="app">
-      <a href="https://geni.us/CNCStoreLabelGen" target="_blank" rel="noopener noreferrer">
-        <img src={`${import.meta.env.BASE_URL}header.jpg`} alt="CNC Kitchen" className="header-banner" />
-      </a>
       <header>
-        <h1>Gridfinity Label Generator (Beta)</h1>
+        <h1>Gridfinity Label Generator</h1>
       </header>
 
       <div className="info-box">
@@ -120,9 +117,7 @@ export function App() {
         <p className="info-beta">
           ⚠️ This is a <strong>beta</strong> — found a bug or want a new feature?{" "}
           Open an issue on{" "}
-          <a href="https://github.com/CNCKitchen/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">GitHub</a>{" "}
-          or comment on{" "}
-          <a href="https://www.printables.com/model/1635048-gridfinity-label-generator-web-app" target="_blank" rel="noopener noreferrer">Printables</a>.
+          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">GitHub</a>{" "}.
         </p>
       </div>
 
