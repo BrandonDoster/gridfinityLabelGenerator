@@ -66,6 +66,30 @@ header {
   object-fit: cover;
 }
 
+.settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.settings-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-label {
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
 .preview-panel {
   margin-bottom: 16px;
   align-items: center;

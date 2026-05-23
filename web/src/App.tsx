@@ -4,7 +4,8 @@ import { LabelPreview } from "./components/LabelPreview";
 import { PredefinedSelector } from "./components/PredefinedSelector";
 import { downloadBatch, downloadSingle, fetchPredefined } from "./services/api";
 import { saveBlob } from "./services/download";
-import type { LabelInput, PredefinedLabel } from "./types/label";
+import { getProfile, listProfiles } from "./services/profiles";
+import type { BaseStlProfileId, EmbossMode, LabelInput, PredefinedLabel } from "./types/label";
 
 function slugifyTitle(value: string): string {
   return value
@@ -31,6 +32,10 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [previewLabel, setPreviewLabel] = useState<LabelInput | null>(null);
   const [activePanel, setActivePanel] = useState<"custom" | "predefined">("custom");
+  const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>("pred");
+  const [embossMode, setEmbossMode] = useState<EmbossMode>("raised");
+  const profiles = listProfiles();
+  const activeProfile = getProfile(baseProfileId);
 
   useEffect(() => {
     const run = async () => {
@@ -48,20 +53,46 @@ export function App() {
 
   const handleCustom = async (input: LabelInput) => {
     setError("");
-    const blob = await downloadSingle(input);
-    saveBlob(blob, `${slugifyTitle(input.title)}.stl`);
+    const blob = await downloadSingle({ ...input, baseProfileId, embossMode });
+    saveBlob(blob, `${slugifyTitle(input.title)}.3mf`);
   };
 
   const handleBatch = async (selected: PredefinedLabel[]) => {
     setError("");
-    const result = await downloadBatch(selected);
+    const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode }));
+    const result = await downloadBatch(tagged);
     if (result.isZip) {
       saveBlob(result.blob, buildBatchZipFileName());
       return;
     }
 
     const single = selected[0];
-    saveBlob(result.blob, `${slugifyTitle(single.title)}.stl`);
+    saveBlob(result.blob, `${slugifyTitle(single.title)}.3mf`);
+  };
+
+  // When the base STL changes, re-emit the current preview label so the
+  // <LabelPreview> re-renders against the new profile layout. Also auto-reset
+  // emboss mode to raised if the new profile doesn't support flush.
+  const handleBaseChange = (id: BaseStlProfileId) => {
+    setBaseProfileId(id);
+    const newProfile = getProfile(id);
+    const nextMode: EmbossMode =
+      embossMode === "flush" && !newProfile.supportsFlush ? "raised" : embossMode;
+    if (nextMode !== embossMode) setEmbossMode(nextMode);
+    if (previewLabel) {
+      setPreviewLabel({ ...previewLabel, baseProfileId: id, embossMode: nextMode });
+    }
+  };
+
+  const handleEmbossModeChange = (mode: EmbossMode) => {
+    setEmbossMode(mode);
+    if (previewLabel) setPreviewLabel({ ...previewLabel, embossMode: mode });
+  };
+
+  // Wrap setPreviewLabel so child-emitted previews always carry the active
+  // base profile id + emboss mode, even though the children don't know about them.
+  const handlePreviewChange = (label: LabelInput) => {
+    setPreviewLabel({ ...label, baseProfileId, embossMode });
   };
 
   return (
@@ -102,9 +133,49 @@ export function App() {
         <LabelPreview label={previewLabel} />
       </section>
 
+      <div className="settings-bar">
+        <div className="settings-group">
+          <span className="settings-label">Base STL</span>
+          <div className="mode-toggle">
+            {profiles.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={baseProfileId === p.id ? "active" : ""}
+                onClick={() => handleBaseChange(p.id)}
+              >
+                {p.displayName}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {activeProfile.supportsFlush && (
+          <div className="settings-group">
+            <span className="settings-label">Emboss Mode</span>
+            <div className="mode-toggle">
+              <button
+                type="button"
+                className={embossMode === "raised" ? "active" : ""}
+                onClick={() => handleEmbossModeChange("raised")}
+              >
+                Raised
+              </button>
+              <button
+                type="button"
+                className={embossMode === "flush" ? "active" : ""}
+                onClick={() => handleEmbossModeChange("flush")}
+              >
+                Flush
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="layout">
-        <LabelForm onGenerate={handleCustom} onPreviewChange={setPreviewLabel} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} />
-        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={setPreviewLabel} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} />
+        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} />
+        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} />
       </div>
     </main>
   );

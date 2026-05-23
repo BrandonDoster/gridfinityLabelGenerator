@@ -210,7 +210,7 @@ export function LabelForm({ onGenerate, onPreviewChange, isActive, onActivate }:
         </div>
       </div>
       <button type="submit" disabled={loading}>
-        {loading ? "Generating..." : "Download STL"}
+        {loading ? "Generating..." : "Download 3MF"}
       </button>
     </form>
   );

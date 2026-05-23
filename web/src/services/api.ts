@@ -8,7 +8,36 @@ import insertSvg from "../assets/insert.svg?raw";
 import nutSvg from "../assets/nut.svg?raw";
 import nylockSvg from "../assets/nylock.svg?raw";
 import type { IconKey, LabelInput, PredefinedLabel } from "../types/label";
-import { generateLabelStl } from "./labelGenerator";
+
+const THREE_MF_MIME = "model/3mf";
+
+// Dynamic-import the heavy generator pipeline (Three.js + fflate + our
+// labelGenerator + threeMfExporter) so it's code-split into its own chunk.
+// Only fetched when the user actually clicks Download — see D-020.
+// Subsequent calls hit the browser's module cache instantly.
+async function loadGenerator() {
+  const [{ buildLabelMeshes }, { buildThreeMf }] = await Promise.all([
+    import("./labelGenerator"),
+    import("./threeMfExporter"),
+  ]);
+  return { buildLabelMeshes, buildThreeMf };
+}
+
+async function generateLabel3mf(label: LabelInput): Promise<ArrayBuffer> {
+  const { buildLabelMeshes, buildThreeMf } = await loadGenerator();
+  const { baseGeometry, inlayGeometry } = await buildLabelMeshes(label);
+  return buildThreeMf({
+    title: label.title,
+    // Default AMS slot assignment: body = slot 1, inlay = slot 2. Bambu / Orca
+    // auto-assign whatever the user has loaded in those slots, so a user with
+    // black + red filaments gets a black body + red text/icon out of the box
+    // (and a single-filament user falls back to slot 1 for both, no error).
+    parts: [
+      { geometry: baseGeometry, name: "Label Body", extruder: 1 },
+      { geometry: inlayGeometry, name: "Text & Icons", extruder: 2 },
+    ],
+  });
+}
 
 const ICON_SVGS: Record<IconKey, string> = {
   tx: txSvg,
@@ -190,8 +219,8 @@ export async function fetchPredefined(): Promise<PredefinedLabel[]> {
 }
 
 export async function downloadSingle(label: LabelInput): Promise<Blob> {
-  const stl = await generateLabelStl(label);
-  return new Blob([stl], { type: "model/stl" });
+  const buffer = await generateLabel3mf(label);
+  return new Blob([buffer], { type: THREE_MF_MIME });
 }
 
 export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob; isZip: boolean }> {
@@ -200,11 +229,31 @@ export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob;
   }
 
   const files: Record<string, Uint8Array> = {};
+  const used = new Set<string>();
   for (const label of labels) {
-    const stl = await generateLabelStl(label);
-    files[slugify(label.title) + ".stl"] = new Uint8Array(stl);
+    const buffer = await generateLabel3mf(label);
+    files[uniqueName(slugify(label.title) + ".3mf", used)] = new Uint8Array(buffer);
   }
   const zipped = zipSync(files, { level: 9 });
   const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
   return { blob: new Blob([zipBuf], { type: "application/zip" }), isZip: true };
+}
+
+function uniqueName(name: string, used: Set<string>): string {
+  if (!used.has(name)) {
+    used.add(name);
+    return name;
+  }
+  const dot = name.lastIndexOf(".");
+  const stem = dot === -1 ? name : name.slice(0, dot);
+  const ext = dot === -1 ? "" : name.slice(dot);
+  for (let i = 2; i < 1000; i++) {
+    const candidate = `${stem}-${i}${ext}`;
+    if (!used.has(candidate)) {
+      used.add(candidate);
+      return candidate;
+    }
+  }
+  used.add(name);
+  return name;
 }

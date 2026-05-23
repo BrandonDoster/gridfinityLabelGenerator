@@ -1,81 +1,129 @@
 import {
   Box3,
+  BufferGeometry,
   ExtrudeGeometry,
-  Group,
   Mesh,
   MeshNormalMaterial,
   Shape,
   ShapeGeometry,
   ShapePath,
-  type BufferGeometry,
 } from "three";
-import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { FontLoader, type Font } from "three/examples/jsm/loaders/FontLoader.js";
-import type { LabelInput } from "../types/label";
-
-const EMBOSS_HEIGHT = 0.4;
+import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import type {
+  BaseStlProfile,
+  BaseStlProfileId,
+  ContentRect,
+  EmbossMode,
+  LabelInput,
+} from "../types/label";
+import { PRED_PROFILE, getProfile } from "./profiles";
 
 // Tighter letter spacing: each glyph's horizontal advance is reduced by this
 // factor. Glyphs themselves are unchanged (no squishing), only the gaps between
 // them shrink. The smaller total width lets chooseTextSizeForBox pick a larger
 // font size, making strokes proportionally thicker — important for sliceability.
+// Profile-agnostic — tracking is a font-rendering concern, not a label-design one.
 const TRACKING = 0.95;
 
-const SVG_BOX = { x1: 1.5, y1: 0.5, x2: 11, y2: 10 };
-const TEXT_TOP_BOX = { x1: 11, y1: 5.75, x2: 34.5, y2: 10 };
-const TEXT_BOTTOM_BOX = { x1: 11, y1: 0.5, x2: 34.5, y2: 4.75 };
-
-type Rect = { x1: number; y1: number; x2: number; y2: number };
+type Rect = ContentRect;
 
 const material = new MeshNormalMaterial();
 const stlLoader = new STLLoader();
 const svgLoader = new SVGLoader();
-const exporter = new STLExporter();
 
-// Lazy-initialized state
-let _init: Promise<void> | null = null;
-let baseGeometry: BufferGeometry;
-let topZ: number;
-let CONTENT_ORIGIN_X: number;
-let CONTENT_ORIGIN_Y: number;
-let font: Font;
+// Per-profile asset cache. Keyed by profile id so each STL is fetched + parsed
+// at most once for the lifetime of the page.
+interface LoadedProfile {
+  baseGeometry: BufferGeometry;
+  topZ: number;
+  contentOriginX: number;
+  contentOriginY: number;
+}
+const profileCache = new Map<BaseStlProfileId, Promise<LoadedProfile>>();
+let fontPromise: Promise<Font> | null = null;
 
-// Per-call offset: shifts content right to centre it on wider labels
-let contentXOffset = 0;
+// Per-call state. Set at the start of buildLabelMeshes; helper functions read
+// these. Not concurrent-safe — see fork_plan.md gotchas. Acceptable for the
+// existing single-call-at-a-time UX.
+let activeProfile: BaseStlProfile = PRED_PROFILE;
+let activeLoaded: LoadedProfile | null = null;
+let activeFont: Font | null = null;
+let activeMode: EmbossMode = "raised";
+let contentXOffset = 0; // shifts content right to centre it on wider labels
 
-function ensureInitialized(): Promise<void> {
-  if (_init) return _init;
+async function loadFont(): Promise<Font> {
+  if (fontPromise) return fontPromise;
   const base = import.meta.env.BASE_URL;
-  _init = (async () => {
-    const [stlResp, fontResp] = await Promise.all([
-      fetch(`${base}GridfinityBinLabel.stl`),
-      fetch(`${base}helvetiker_bold.typeface.json`),
-    ]);
-    if (!stlResp.ok || !fontResp.ok) {
-      throw new Error("Failed to load label assets");
-    }
-    baseGeometry = stlLoader.parse(await stlResp.arrayBuffer());
-    baseGeometry.computeBoundingBox();
-    const bounds = baseGeometry.boundingBox ?? new Box3();
-    topZ = bounds.max.z;
-    CONTENT_ORIGIN_X = bounds.min.x + 1.5;
-    CONTENT_ORIGIN_Y = bounds.min.y + 0.5;
-    font = new FontLoader().parse(await fontResp.json());
+  fontPromise = (async () => {
+    const resp = await fetch(`${base}helvetiker_bold.typeface.json`);
+    if (!resp.ok) throw new Error("Failed to load font");
+    return new FontLoader().parse(await resp.json());
   })();
-  return _init;
+  return fontPromise;
+}
+
+async function loadProfile(profile: BaseStlProfile): Promise<LoadedProfile> {
+  const existing = profileCache.get(profile.id);
+  if (existing) return existing;
+  const base = import.meta.env.BASE_URL;
+  const promise = (async () => {
+    const resp = await fetch(`${base}${profile.assetPath}`);
+    if (!resp.ok) throw new Error(`Failed to load base STL: ${profile.assetPath}`);
+    const geometry = stlLoader.parse(await resp.arrayBuffer());
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox ?? new Box3();
+    return {
+      baseGeometry: geometry,
+      topZ: bounds.max.z,
+      contentOriginX: bounds.min.x + profile.contentOrigin.x,
+      contentOriginY: bounds.min.y + profile.contentOrigin.y,
+    };
+  })();
+  profileCache.set(profile.id, promise);
+  return promise;
 }
 
 function cloneBaseMesh(): Mesh<BufferGeometry> {
-  return new Mesh(baseGeometry.clone(), material);
+  return new Mesh(activeLoaded!.baseGeometry.clone(), material);
+}
+
+/**
+ * Z-positioning for inlay (text + icon) meshes.
+ *
+ * Text meshes have no rotation, so `position.z` is the BOTTOM of the geometry
+ * and the extrusion runs upward by `embossHeight`.
+ *
+ * Icon meshes go through `geometry.rotateX(Math.PI)` (to flip the Y axis from
+ * SVG-screen-coords to 3D world-coords). That rotation also negates Z, so the
+ * extrusion direction inverts: `position.z` becomes the TOP and the depth
+ * runs downward from there.
+ *
+ * Mode + raisedZ matrix:
+ *
+ *   flush (any profile)          → inlay top at topZ (carved into body via CSG)
+ *   raised + raisedZ "in"        → inlay top at topZ (fills natural recess)
+ *   raised + raisedZ "above"     → inlay bottom at topZ (rides on top of body)
+ *
+ * The flush case and the raised+"in" case land on the same coordinates; the
+ * difference is whether CSG runs afterwards to carve the matching cavity.
+ */
+function inlayZ(): { textZ: number; iconZ: number } {
+  const topZ = activeLoaded!.topZ;
+  const eh = activeProfile.embossHeight;
+  if (activeMode === "flush" || activeProfile.raisedZ === "in") {
+    return { textZ: topZ - eh, iconZ: topZ };
+  }
+  return { textZ: topZ, iconZ: topZ + eh };
 }
 
 // Generates Three.js shapes for `text` at `size` with reduced letter spacing.
 // Replicates Three.js FontLoader's internal createPaths logic so we can apply
 // a custom tracking multiplier to each glyph's horizontal advance (ha).
 function generateShapesWithTracking(text: string, size: number): Shape[] {
-  const data = (font as any).data as {
+  const data = (activeFont as any).data as {
     resolution: number;
     glyphs: Record<string, { ha: number; o?: string; _cachedOutline?: string[] }>;
   };
@@ -148,11 +196,13 @@ function getBoxSize(box: Rect): { width: number; height: number } {
 }
 
 function toWorldBox(box: Rect): Rect {
+  const ox = activeLoaded!.contentOriginX;
+  const oy = activeLoaded!.contentOriginY;
   return {
-    x1: CONTENT_ORIGIN_X + contentXOffset + box.x1,
-    y1: CONTENT_ORIGIN_Y + box.y1,
-    x2: CONTENT_ORIGIN_X + contentXOffset + box.x2,
-    y2: CONTENT_ORIGIN_Y + box.y2,
+    x1: ox + contentXOffset + box.x1,
+    y1: oy + box.y1,
+    x2: ox + contentXOffset + box.x2,
+    y2: oy + box.y2,
   };
 }
 
@@ -185,7 +235,7 @@ function buildSvgMeshInBox(svgString: string, box: Rect): Mesh | null {
   }
   if (shapes.length === 0) return null;
 
-  const extruded = toExtrudedMesh(shapes, EMBOSS_HEIGHT);
+  const extruded = toExtrudedMesh(shapes, activeProfile.embossHeight);
   const sourceBounds = getMeshBounds(extruded);
   const sourceWidth = sourceBounds.max.x - sourceBounds.min.x;
   const sourceHeight = sourceBounds.max.y - sourceBounds.min.y;
@@ -197,7 +247,9 @@ function buildSvgMeshInBox(svgString: string, box: Rect): Mesh | null {
 
   // SVG assets use screen coordinates where Y grows downward. Rotate the
   // geometry around X instead of using a negative scale so triangle winding
-  // stays outward-facing in the exported STL.
+  // stays outward-facing. Side effect: rotateX(PI) also negates Z, so the
+  // extrusion now runs in -Z; final Z position is set via inlayZ().iconZ
+  // (compensates per the active profile's raisedZ semantics).
   extruded.geometry.rotateX(Math.PI);
   extruded.geometry.scale(scale, scale, 1);
   extruded.geometry.computeVertexNormals();
@@ -208,16 +260,16 @@ function buildSvgMeshInBox(svgString: string, box: Rect): Mesh | null {
   const tx = target.x1 + (targetSize.width - scaledWidth) / 2 - scaledBounds.min.x;
   const ty = target.y1 + (targetSize.height - scaledHeight) / 2 - scaledBounds.min.y;
 
-  extruded.position.set(tx, ty, topZ);
+  extruded.position.set(tx, ty, inlayZ().iconZ);
   return extruded;
 }
 
 function buildIconMesh(iconSvg: string): Mesh | null {
-  return buildSvgMeshInBox(iconSvg, SVG_BOX);
+  return buildSvgMeshInBox(iconSvg, activeProfile.iconBox);
 }
 
 function buildIconTextMeshes(text: string): Mesh[] {
-  const target = toWorldBox(SVG_BOX);
+  const target = toWorldBox(activeProfile.iconBox);
   const targetSize = getBoxSize(target);
 
   // Split e.g. "TX10" → ["TX", "10"] so each part fills its own half and renders larger
@@ -270,7 +322,7 @@ function createTextLineMesh(
   if (shapes.length === 0) return null;
 
   const geometry = new ExtrudeGeometry(shapes, {
-    depth: EMBOSS_HEIGHT,
+    depth: activeProfile.embossHeight,
     bevelEnabled: false,
     curveSegments: 10,
   });
@@ -291,13 +343,13 @@ function createTextLineMesh(
 
   const tx = x + (width - scaledWidth) / 2 - bounds.min.x * scale;
   const ty = y + (height - scaledHeight) / 2 - bounds.min.y * scale;
-  mesh.position.set(tx, ty, topZ - 0.4);
+  mesh.position.set(tx, ty, inlayZ().textZ);
   return mesh;
 }
 
 function buildTextMeshes(label: LabelInput): Mesh[] {
-  const topBox = toWorldBox(TEXT_TOP_BOX);
-  const bottomBox = toWorldBox(TEXT_BOTTOM_BOX);
+  const topBox = toWorldBox(activeProfile.line1Box);
+  const bottomBox = toWorldBox(activeProfile.line2Box);
   const topSize = getBoxSize(topBox);
   const bottomSize = getBoxSize(bottomBox);
 
@@ -308,7 +360,7 @@ function buildTextMeshes(label: LabelInput): Mesh[] {
   if (line1Mesh) meshes.push(line1Mesh);
 
   if (label.line2Svg) {
-    const line2Mesh = buildSvgMeshInBox(label.line2Svg, TEXT_BOTTOM_BOX);
+    const line2Mesh = buildSvgMeshInBox(label.line2Svg, activeProfile.line2Box);
     if (line2Mesh) meshes.push(line2Mesh);
   } else {
     const bottomFontSize = chooseTextSizeForBox(label.line2, bottomSize.width, bottomSize.height);
@@ -319,38 +371,108 @@ function buildTextMeshes(label: LabelInput): Mesh[] {
   return meshes;
 }
 
-export async function generateLabelStl(label: LabelInput): Promise<ArrayBuffer> {
-  await ensureInitialized();
+export interface LabelMeshes {
+  /** Carved/clean base body geometry. World coordinates already baked in. */
+  baseGeometry: BufferGeometry;
+  /**
+   * All inlay shapes (line1, line2, icon) concatenated into a single
+   * BufferGeometry with disconnected triangle islands. Slicers treat this as
+   * one paintable part, sidestepping the STL "split → one part per letter"
+   * problem. World coordinates already baked in.
+   */
+  inlayGeometry: BufferGeometry;
+}
 
+export async function buildLabelMeshes(label: LabelInput): Promise<LabelMeshes> {
   if (!label.line1.trim() && !label.line2.trim()) {
     throw new Error("At least one text line is required.");
   }
 
+  const profile = getProfile(label.baseProfileId);
+  const requestedMode: EmbossMode = label.embossMode ?? "raised";
+  // Silently downgrade flush → raised on profiles that don't support it.
+  // Defensive: the UI should already hide the toggle in that case.
+  const mode: EmbossMode = requestedMode === "flush" && profile.supportsFlush ? "flush" : "raised";
+
+  const [loaded, font] = await Promise.all([loadProfile(profile), loadFont()]);
+
+  // Activate this profile's state for the helpers (toWorldBox / inlayZ / etc).
+  activeProfile = profile;
+  activeLoaded = loaded;
+  activeFont = font;
+  activeMode = mode;
+
   const width = label.labelWidth ?? 1;
-  const extraWidth = (width - 1) * 42;
-  // Centre the marking on the expanded label
+  const widening = profile.widening;
+  const extraWidth = widening ? (width - 1) * widening.extraWidthPerUnit : 0;
   contentXOffset = extraWidth / 2;
 
   const baseMesh = cloneBaseMesh();
   if (extraWidth > 0) widenGeometry(baseMesh.geometry, extraWidth);
 
-  const root = new Group();
-  root.add(baseMesh);
+  const inlayMeshes: Mesh[] = [];
   if (label.iconText) {
-    for (const m of buildIconTextMeshes(label.iconText)) root.add(m);
+    inlayMeshes.push(...buildIconTextMeshes(label.iconText));
   } else {
     const iconMesh = buildIconMesh(label.iconSvg);
-    if (iconMesh) root.add(iconMesh);
+    if (iconMesh) inlayMeshes.push(iconMesh);
   }
-  for (const textMesh of buildTextMeshes(label)) {
-    root.add(textMesh);
-  }
-  root.updateMatrixWorld(true);
+  inlayMeshes.push(...buildTextMeshes(label));
 
-  const result = exporter.parse(root, { binary: true });
-  if (result instanceof DataView) {
-    return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
+  let baseGeometry = bakePositionOnly(baseMesh);
+  const inlayGeometry = mergeInlayMeshes(inlayMeshes);
+
+  if (mode === "flush") {
+    // Carve the inlay shape out of the base so both parts are individually
+    // manifold and the printed top is flush. manifold-3d is dynamic-imported
+    // here — the ~482 KB wasm only fetches on first flush export.
+    const { subtract } = await import("./csg");
+    const carved = await subtract(baseGeometry, inlayGeometry);
+    baseGeometry = mergeVertices(carved, 1e-4);
   }
-  // Fallback: ASCII string result
-  return new TextEncoder().encode(result as unknown as string).buffer;
+
+  return { baseGeometry, inlayGeometry };
+}
+
+// Returns a position-only, vertex-deduped BufferGeometry with mesh.matrixWorld
+// baked in. Three steps:
+//   1. Strip to position (+ index) only — 3MF doesn't carry normals/UVs.
+//   2. Apply mesh.matrixWorld so the geometry is in final world coordinates.
+//   3. mergeVertices to convert to indexed geometry with shared edges.
+//
+// Step 3 is critical for slicer compatibility: STLLoader and ExtrudeGeometry
+// both produce non-indexed geometry where every triangle owns 3 unique
+// vertices. When that lands in a 3MF, slicers (Orca in particular) treat it
+// as a soup of disconnected triangles — every edge is reported non-manifold.
+// mergeVertices walks the position array, hashes each vertex to the tolerance,
+// and emits indexed output where coincident vertices are shared. See
+// fork_decisions.md §D-014.
+function bakePositionOnly(mesh: Mesh): BufferGeometry {
+  mesh.updateMatrixWorld(true);
+  const src = mesh.geometry as BufferGeometry;
+  const position = src.getAttribute("position");
+  if (!position) {
+    throw new Error("Mesh geometry has no position attribute");
+  }
+  const out = new BufferGeometry();
+  out.setAttribute("position", position.clone());
+  if (src.index) out.setIndex(src.index.clone());
+  out.applyMatrix4(mesh.matrixWorld);
+  // 1e-4 mm = 0.1 µm — well below any meaningful print feature, well above
+  // float-precision noise from the matrix-world bake.
+  return mergeVertices(out, 1e-4);
+}
+
+function mergeInlayMeshes(meshes: Mesh[]): BufferGeometry {
+  const baked = meshes.map(bakePositionOnly);
+  if (baked.length === 0) return new BufferGeometry();
+  if (baked.length === 1) return baked[0];
+  const merged = mergeGeometries(baked, false);
+  if (!merged) {
+    // Geometry attribute mismatch — should not happen since bakePositionOnly
+    // strips to position-only, but fall back to the first geometry rather
+    // than emit a broken 3MF.
+    return baked[0];
+  }
+  return merged;
 }

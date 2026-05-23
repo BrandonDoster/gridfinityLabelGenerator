@@ -287,9 +287,9 @@ export function PredefinedSelector({ labels, onGenerate, onPreviewChange, isActi
         {loading
           ? "Generating..."
           : selectedItems.length === 0
-            ? "Download STL"
+            ? "Download 3MF"
             : selectedItems.length === 1
-              ? "Download STL"
+              ? "Download 3MF"
               : `Download ZIP (${selectedItems.length})`}
       </button>
     </section>
