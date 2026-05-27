@@ -24,10 +24,10 @@ export interface LabelInput {
 export type EmbossMode = "raised" | "flush";
 
 export type LabelCategory = "fasteners" | "inserts";
-export type IconKey = "tx" | "washer" | "washer_large" | "screwLowHead" | "insert" | "nut" | "nylock";
 
 export interface PredefinedLabel extends LabelInput {
-  icon: IconKey;
+  /** Icon id from the icon manifest (web/src/assets/icons/). */
+  icon: string;
   category: LabelCategory;
   size: string;
   wrenchSize?: string;

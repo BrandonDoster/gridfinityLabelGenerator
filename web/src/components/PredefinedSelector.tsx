@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LabelCategory, PredefinedLabel } from "../types/label";
-import txSvg from "../assets/torx.svg?raw";
-import trpLowHeadSvg from "../assets/TRP_lowHeadScrew.svg?raw";
+import { getIcon } from "../assets/icons";
+
+const torxIcon = getIcon("torx");
+const lowHeadIcon = getIcon("low");
 
 // Fixed M3x10 Screw used as the live preview fixture for the predefined panel
 const M3_PREVIEW_BASE: PredefinedLabel = {
@@ -9,13 +11,13 @@ const M3_PREVIEW_BASE: PredefinedLabel = {
   title: "M3x10 Screw",
   line1: "M3x10",
   line2: "Screw",
-  iconSvg: txSvg,
-  iconViewBox: "541 127 112 112",
-  line2Svg: trpLowHeadSvg,
-  line2ViewBox: "28 1042 93 32",
+  iconSvg: torxIcon?.svg ?? "",
+  iconViewBox: torxIcon?.viewBox,
+  line2Svg: lowHeadIcon?.svg,
+  line2ViewBox: lowHeadIcon?.viewBox,
   category: "fasteners",
   size: "M3",
-  icon: "tx",
+  icon: "torx",
   wrenchSize: "TX10",
 };
 
@@ -51,9 +53,10 @@ interface PredefinedSelectorProps {
   onPreviewChange?: (label: PredefinedLabel) => void;
   isActive?: boolean;
   onActivate?: () => void;
+  exportFormat?: "3mf" | "png";
 }
 
-export function PredefinedSelector({ labels, onGenerate, onPreviewChange, isActive, onActivate }: PredefinedSelectorProps) {
+export function PredefinedSelector({ labels, onGenerate, onPreviewChange, isActive, onActivate, exportFormat = "3mf" }: PredefinedSelectorProps) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -286,11 +289,9 @@ export function PredefinedSelector({ labels, onGenerate, onPreviewChange, isActi
       <button disabled={loading || selectedItems.length === 0} onClick={runGenerate}>
         {loading
           ? "Generating..."
-          : selectedItems.length === 0
-            ? "Download 3MF"
-            : selectedItems.length === 1
-              ? "Download 3MF"
-              : `Download ZIP (${selectedItems.length})`}
+          : selectedItems.length > 1
+            ? `Download ZIP (${selectedItems.length})`
+            : `Download ${exportFormat === "png" ? "PNG" : "3MF"}`}
       </button>
     </section>
   );

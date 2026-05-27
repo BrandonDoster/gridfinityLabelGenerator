@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LabelForm } from "./components/LabelForm";
 import { LabelPreview } from "./components/LabelPreview";
 import { PredefinedSelector } from "./components/PredefinedSelector";
-import { downloadBatch, downloadSingle, fetchPredefined } from "./services/api";
+import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng, fetchPredefined } from "./services/api";
 import { saveBlob } from "./services/download";
 import { getProfile, listProfiles } from "./services/profiles";
 import type { BaseStlProfileId, EmbossMode, LabelInput, PredefinedLabel } from "./types/label";
@@ -15,7 +15,7 @@ function slugifyTitle(value: string): string {
     .replace(/(^-|-$)/g, "") || "label";
 }
 
-function buildBatchZipFileName(date = new Date()): string {
+function buildBatchZipFileName(typeToken: string, date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -23,7 +23,7 @@ function buildBatchZipFileName(date = new Date()): string {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const seconds = String(date.getSeconds()).padStart(2, "0");
 
-  return `${year}${month}${day}-${hours}${minutes}${seconds}_batchExport.zip`;
+  return `${year}${month}${day}-${hours}${minutes}${seconds}_${typeToken}_batchExport.zip`;
 }
 
 export function App() {
@@ -34,6 +34,7 @@ export function App() {
   const [activePanel, setActivePanel] = useState<"custom" | "predefined">("custom");
   const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>("pred");
   const [embossMode, setEmbossMode] = useState<EmbossMode>("raised");
+  const [exportFormat, setExportFormat] = useState<"3mf" | "png">("3mf");
   const profiles = listProfiles();
   const activeProfile = getProfile(baseProfileId);
 
@@ -51,23 +52,29 @@ export function App() {
     run();
   }, []);
 
+  // Output type for filenames: "pred" / "cullenect" for 3MF, "png" for images —
+  // so exporting the same label as different types doesn't collide on download.
+  const typeToken = exportFormat === "png" ? "png" : baseProfileId;
+  const ext = exportFormat === "png" ? "png" : "3mf";
+
   const handleCustom = async (input: LabelInput) => {
     setError("");
-    const blob = await downloadSingle({ ...input, baseProfileId, embossMode });
-    saveBlob(blob, `${slugifyTitle(input.title)}.3mf`);
+    const tagged = { ...input, baseProfileId, embossMode };
+    const blob = exportFormat === "png" ? await downloadSinglePng(tagged) : await downloadSingle(tagged);
+    saveBlob(blob, `${slugifyTitle(input.title)}-${typeToken}.${ext}`);
   };
 
   const handleBatch = async (selected: PredefinedLabel[]) => {
     setError("");
     const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode }));
-    const result = await downloadBatch(tagged);
+    const result = exportFormat === "png" ? await downloadBatchPng(tagged) : await downloadBatch(tagged);
     if (result.isZip) {
-      saveBlob(result.blob, buildBatchZipFileName());
+      saveBlob(result.blob, buildBatchZipFileName(typeToken));
       return;
     }
 
     const single = selected[0];
-    saveBlob(result.blob, `${slugifyTitle(single.title)}.3mf`);
+    saveBlob(result.blob, `${slugifyTitle(single.title)}-${typeToken}.${ext}`);
   };
 
   // When the base STL changes, re-emit the current preview label so the
@@ -109,21 +116,14 @@ export function App() {
 
       <div className="info-box">
         <p>
-          Labels are designed for{" "}
+          Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for{" "}
           <a href="https://www.printables.com/model/592545-gridfinity-bin-with-printable-label-by-pred-parame" target="_blank" rel="noopener noreferrer">
-            the Gridfinity Bin with Printable Label by Pred
+            Gridfinity bins
           </a>
-          . Print at <strong>0.2 mm layer height</strong> with a{" "}
-          <strong>color change in layer 3</strong> for best contrast.{" "}
-          The <strong>Arachne wall generator</strong> is recommended for sharper detail.
-        </p>
-        <p>
-          Includes pre-defined labels for all <strong>CNC Kitchen fasteners &amp; inserts</strong>.
-        </p>
-        <p className="info-beta">
-          ⚠️ This is a <strong>beta</strong> — found a bug or want a new feature?{" "}
-          Open an issue on{" "}
-          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">GitHub</a>{" "}.
+          . Print settings, base designs, and tips are in the{" "}
+          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator#readme" target="_blank" rel="noopener noreferrer">README</a>
+          . Found a bug or want a feature?{" "}
+          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">Open an issue</a>.
         </p>
       </div>
 
@@ -136,22 +136,32 @@ export function App() {
 
       <div className="settings-bar">
         <div className="settings-group">
-          <span className="settings-label">Base STL</span>
+          <span className="settings-label">Output</span>
           <div className="mode-toggle">
             {profiles.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                className={baseProfileId === p.id ? "active" : ""}
-                onClick={() => handleBaseChange(p.id)}
+                className={exportFormat === "3mf" && baseProfileId === p.id ? "active" : ""}
+                onClick={() => {
+                  setExportFormat("3mf");
+                  handleBaseChange(p.id);
+                }}
               >
                 {p.displayName}
               </button>
             ))}
+            <button
+              type="button"
+              className={exportFormat === "png" ? "active" : ""}
+              onClick={() => setExportFormat("png")}
+            >
+              PNG
+            </button>
           </div>
         </div>
 
-        {activeProfile.supportsFlush && (
+        {activeProfile.supportsFlush && exportFormat !== "png" && (
           <div className="settings-group">
             <span className="settings-label">Emboss Mode</span>
             <div className="mode-toggle">
@@ -175,8 +185,8 @@ export function App() {
       </div>
 
       <div className="layout">
-        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} />
-        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} />
+        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} exportFormat={exportFormat} />
+        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} exportFormat={exportFormat} />
       </div>
     </main>
   );
