@@ -55,6 +55,10 @@ const DEFS: IconDef[] = [
   { id: "torx",         label: "Torx",         file: "torx.svg",         viewBox: "541 127 112 112", kind: "symbol" },
   { id: "washer",       label: "Washer",       file: "washer.svg",       viewBox: "38 280 112 112",  kind: "symbol" },
   { id: "washer_large", label: "Washer L",     file: "washer_large.svg", viewBox: "48 421 112 112",  kind: "symbol" },
+  // Contributed by PixelVengeur — CNCKitchen/gridfinityLabelGenerator#6
+  { id: "square_nut",    label: "Square nut",  file: "square_nut.svg",   viewBox: "-11 -11 130 130", kind: "symbol" },
+  { id: "t_nut",         label: "T-Nut",       file: "tnut.svg",         viewBox: "15 -35 80 120",   kind: "symbol" },
+  { id: "roll-in_t_nut", label: "Roll Nut",    file: "roll-in-tnut.svg", viewBox: "-10 -10 100 170", kind: "symbol" },
 
   // Screw-profile images (line 2). viewBox crops each A4 canvas to the drawing.
   { id: "btn",      label: "Button Head",   file: "TRP_ButtonHead.svg",               viewBox: "25 1070 93 29",  kind: "line2" },
