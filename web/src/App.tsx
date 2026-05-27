@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LabelForm } from "./components/LabelForm";
 import { LabelPreview } from "./components/LabelPreview";
 import { PredefinedSelector } from "./components/PredefinedSelector";
@@ -91,9 +91,15 @@ export function App() {
 
   // Wrap setPreviewLabel so child-emitted previews always carry the active
   // base profile id + emboss mode, even though the children don't know about them.
-  const handlePreviewChange = (label: LabelInput) => {
-    setPreviewLabel({ ...label, baseProfileId, embossMode });
-  };
+  // Memoized so its identity is stable across re-renders: the child preview
+  // effects list onPreviewChange as a dependency, so an unstable identity would
+  // make every emitted preview re-trigger the effect → infinite update loop.
+  const handlePreviewChange = useCallback(
+    (label: LabelInput) => {
+      setPreviewLabel({ ...label, baseProfileId, embossMode });
+    },
+    [baseProfileId, embossMode],
+  );
 
   return (
     <main className="app">
