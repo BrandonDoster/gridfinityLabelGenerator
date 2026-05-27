@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LabelForm } from "./components/LabelForm";
 import { LabelPreview } from "./components/LabelPreview";
 import { PredefinedSelector } from "./components/PredefinedSelector";
-import { downloadBatch, downloadSingle, fetchPredefined } from "./services/api";
+import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng, fetchPredefined } from "./services/api";
 import { saveBlob } from "./services/download";
 import { getProfile, listProfiles } from "./services/profiles";
 import type { BaseStlProfileId, EmbossMode, LabelInput, PredefinedLabel } from "./types/label";
@@ -34,6 +34,7 @@ export function App() {
   const [activePanel, setActivePanel] = useState<"custom" | "predefined">("custom");
   const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>("pred");
   const [embossMode, setEmbossMode] = useState<EmbossMode>("raised");
+  const [exportFormat, setExportFormat] = useState<"3mf" | "png">("3mf");
   const profiles = listProfiles();
   const activeProfile = getProfile(baseProfileId);
 
@@ -53,21 +54,25 @@ export function App() {
 
   const handleCustom = async (input: LabelInput) => {
     setError("");
-    const blob = await downloadSingle({ ...input, baseProfileId, embossMode });
-    saveBlob(blob, `${slugifyTitle(input.title)}.3mf`);
+    const tagged = { ...input, baseProfileId, embossMode };
+    if (exportFormat === "png") {
+      saveBlob(await downloadSinglePng(tagged), `${slugifyTitle(input.title)}.png`);
+    } else {
+      saveBlob(await downloadSingle(tagged), `${slugifyTitle(input.title)}.3mf`);
+    }
   };
 
   const handleBatch = async (selected: PredefinedLabel[]) => {
     setError("");
     const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode }));
-    const result = await downloadBatch(tagged);
+    const result = exportFormat === "png" ? await downloadBatchPng(tagged) : await downloadBatch(tagged);
     if (result.isZip) {
       saveBlob(result.blob, buildBatchZipFileName());
       return;
     }
 
     const single = selected[0];
-    saveBlob(result.blob, `${slugifyTitle(single.title)}.3mf`);
+    saveBlob(result.blob, `${slugifyTitle(single.title)}.${exportFormat === "png" ? "png" : "3mf"}`);
   };
 
   // When the base STL changes, re-emit the current preview label so the
@@ -151,6 +156,26 @@ export function App() {
           </div>
         </div>
 
+        <div className="settings-group">
+          <span className="settings-label">Export</span>
+          <div className="mode-toggle">
+            <button
+              type="button"
+              className={exportFormat === "3mf" ? "active" : ""}
+              onClick={() => setExportFormat("3mf")}
+            >
+              3MF
+            </button>
+            <button
+              type="button"
+              className={exportFormat === "png" ? "active" : ""}
+              onClick={() => setExportFormat("png")}
+            >
+              PNG
+            </button>
+          </div>
+        </div>
+
         {activeProfile.supportsFlush && (
           <div className="settings-group">
             <span className="settings-label">Emboss Mode</span>
@@ -175,8 +200,8 @@ export function App() {
       </div>
 
       <div className="layout">
-        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} />
-        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} />
+        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} exportFormat={exportFormat} />
+        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} exportFormat={exportFormat} />
       </div>
     </main>
   );

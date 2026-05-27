@@ -156,7 +156,8 @@ Three chunk groups, split by `await import(…)` boundaries:
 | Chunk | Gzip | Loaded when |
 |-------|-----:|-------------|
 | `index-*.js` (React + UI + profiles + fflate) | ~63 kB | Page load |
-| `labelGenerator-*.js` + `threeMfExporter-*.js` (Three.js + builder + 3MF writer) | ~58 kB | First Download |
+| `labelGenerator-*.js` + `threeMfExporter-*.js` (Three.js + builder + 3MF writer) | ~58 kB | First 3MF download |
+| `pngExporter-*.js` (label face → PNG, no Three.js) | ~1 kB | First PNG export |
 | `manifold-*.js` + `*.wasm` + `csg-*.js` | ~204 kB | First Flush export |
 
 `api.ts`'s `loadGenerator()` dynamic-imports the generator + exporter; `labelGenerator.ts`'s flush branch dynamic-imports `csg.ts`, which chains to manifold. Profile constants live in `services/profiles.tsx` (not `labelGenerator.ts`) precisely so `App.tsx`'s selector can read them at page load **without** pulling Three.js across the lazy boundary. A static import from any UI file into `labelGenerator.ts`/`csg.ts` collapses the chunks back into one.
@@ -183,6 +184,7 @@ Three chunk groups, split by `await import(…)` boundaries:
 | Inlay Z per mode | `labelGenerator.ts` (`inlayZ()`) |
 | The CSG carve | `csg.ts` + the flush branch of `buildLabelMeshes` |
 | 3MF XML / Bambu config / slots | `threeMfExporter.ts` |
+| PNG export (style, DPI, layout) | `pngExporter.ts` (`buildLabelFaceSvg`, `DPI`, `INK`); orchestrated by `downloadSinglePng`/`downloadBatchPng` in `api.ts` |
 | Move boxes in the 2D preview | the profile's `preview` override in `profiles.tsx` — or just move the content boxes, which the preview derives from |
 | Add an icon | drop SVG in `web/src/assets/icons/` + one row in `icons/index.ts` (`id`/`label`/`file`/`viewBox`/`kind`); for predefined use, set the label's `icon` id in `api.ts` |
 | Add a predefined label | append to `PREDEFINED_DATA` in `api.ts` |

@@ -12,9 +12,10 @@ interface LabelFormProps {
   onPreviewChange?: (label: LabelInput) => void;
   isActive?: boolean;
   onActivate?: () => void;
+  exportFormat?: "3mf" | "png";
 }
 
-export function LabelForm({ onGenerate, onPreviewChange, isActive, onActivate }: LabelFormProps) {
+export function LabelForm({ onGenerate, onPreviewChange, isActive, onActivate, exportFormat = "3mf" }: LabelFormProps) {
   const [line1, setLine1] = useState("M3x10");
   const [line2, setLine2] = useState("Screw");
   const [line2Mode, setLine2Mode] = useState<"text" | "image">("text");
@@ -168,7 +169,7 @@ export function LabelForm({ onGenerate, onPreviewChange, isActive, onActivate }:
         </div>
       </div>
       <button type="submit" disabled={loading}>
-        {loading ? "Generating..." : "Download 3MF"}
+        {loading ? "Generating..." : `Download ${exportFormat === "png" ? "PNG" : "3MF"}`}
       </button>
     </form>
   );

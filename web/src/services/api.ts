@@ -214,6 +214,30 @@ export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob;
   return { blob: new Blob([zipBuf], { type: "application/zip" }), isZip: true };
 }
 
+// PNG export — the lightweight pngExporter (no Three.js) is code-split into its
+// own chunk, fetched on first PNG download. Mirrors the 3MF download shape.
+export async function downloadSinglePng(label: LabelInput): Promise<Blob> {
+  const { buildLabelPng } = await import("./pngExporter");
+  return buildLabelPng(label);
+}
+
+export async function downloadBatchPng(labels: LabelInput[]): Promise<{ blob: Blob; isZip: boolean }> {
+  const { buildLabelPng } = await import("./pngExporter");
+  if (labels.length === 1) {
+    return { blob: await buildLabelPng(labels[0]), isZip: false };
+  }
+
+  const files: Record<string, Uint8Array> = {};
+  const used = new Set<string>();
+  for (const label of labels) {
+    const png = await buildLabelPng(label);
+    files[uniqueName(slugify(label.title) + ".png", used)] = new Uint8Array(await png.arrayBuffer());
+  }
+  const zipped = zipSync(files, { level: 9 });
+  const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
+  return { blob: new Blob([zipBuf], { type: "application/zip" }), isZip: true };
+}
+
 function uniqueName(name: string, used: Set<string>): string {
   if (!used.has(name)) {
     used.add(name);

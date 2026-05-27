@@ -32,8 +32,9 @@ A 36×11 mm flat-bodied alternative, 1U wide. Text and icons either ride on top 
 
 ## Using it
 
-- **Custom label** — enter your own text and pick an icon. Exports a single `.3mf`.
-- **Predefined labels** — select from a curated catalogue of CNC Kitchen fasteners and inserts. One label exports a `.3mf`; multiple export a `.zip` with one `.3mf` per label.
+- **Custom label** — enter your own text and pick an icon. Exports a single file.
+- **Predefined labels** — select from a curated catalogue of CNC Kitchen fasteners and inserts. One label exports a single file; multiple export a `.zip` with one file per label.
+- **Export format** — the **Export** toggle (top bar) switches between **3MF** (the printable 3D model) and **PNG** (a print-ready, black-on-transparent image of the label face at true physical size — for label printers such as the Brother P-touch). Both follow the same single-file / zip-for-multiple behaviour.
 
 Predefined categories: heat inserts (metric M2–M10, imperial #2-56–3/8″-16), socket-head cap screws (M1.6–M5, labelled with Torx drive size TX5–TX25), and hex nuts / nylock nuts / standard washers / large washers (M2–M8).
 
@@ -93,6 +94,7 @@ web/                         React + Vite front-end — this is what gets deploy
       csg.ts                 manifold-3d wrapper for flush mode (lazy)
       profiles.tsx           Profile registry: generation params + 2D preview, Pred + Cullenect (main-chunk, no Three.js)
       api.ts                 Predefined-label catalogue + download orchestration
+      pngExporter.ts         Label face → print-ready PNG (black on transparent, lazy)
     assets/icons/            SVG clipart + screw-profile images, plus index.ts — the single icon manifest
   public/                    Base STLs, fonts, images served as-is
 server/                      Legacy Express prototype (unmaintained, not used by the deployed site)
