@@ -11,7 +11,7 @@ Everything runs **in the browser** — there is no server in the deployed flow. 
 ```
 User input
   LabelForm (custom)  or  PredefinedSelector (catalogue)
-  + Base STL toggle, + Emboss Mode toggle (Cullenect only)
+  + Output selector (Pred / Cullenect / PNG), + Emboss Mode toggle (Cullenect only)
         │  LabelInput { title, line1, line2, iconSvg, line2Svg?,
         │               iconText?, labelWidth?, baseProfileId, embossMode }
         ▼

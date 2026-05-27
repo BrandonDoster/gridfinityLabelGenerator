@@ -141,31 +141,21 @@ export function App() {
 
       <div className="settings-bar">
         <div className="settings-group">
-          <span className="settings-label">Base STL</span>
+          <span className="settings-label">Output</span>
           <div className="mode-toggle">
             {profiles.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                className={baseProfileId === p.id ? "active" : ""}
-                onClick={() => handleBaseChange(p.id)}
+                className={exportFormat === "3mf" && baseProfileId === p.id ? "active" : ""}
+                onClick={() => {
+                  setExportFormat("3mf");
+                  handleBaseChange(p.id);
+                }}
               >
                 {p.displayName}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <span className="settings-label">Export</span>
-          <div className="mode-toggle">
-            <button
-              type="button"
-              className={exportFormat === "3mf" ? "active" : ""}
-              onClick={() => setExportFormat("3mf")}
-            >
-              3MF
-            </button>
             <button
               type="button"
               className={exportFormat === "png" ? "active" : ""}
@@ -176,7 +166,7 @@ export function App() {
           </div>
         </div>
 
-        {activeProfile.supportsFlush && (
+        {activeProfile.supportsFlush && exportFormat !== "png" && (
           <div className="settings-group">
             <span className="settings-label">Emboss Mode</span>
             <div className="mode-toggle">
