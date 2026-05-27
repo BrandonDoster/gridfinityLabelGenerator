@@ -15,7 +15,7 @@ The slicer shows these as a single grouped model with two paintable children. Fo
 
 Each label consists of:
 
-- **Icon** (left): one of 10 clipart symbols (hex, nut, nylock, washer, large washer, lock washer, insert, torx, phillips, slot)
+- **Icon** (left): a clipart symbol — drive types (Torx, Phillips, slot, hex, Robertson) and parts (nut, nylock, washers, lock washer, insert, square nut, T-nut, roll-in T-nut)
 - **Line 1** (top right): text, auto-sized to fill its box
 - **Line 2** (bottom right): text, or one of 10 technical screw-profile images (button head, countersunk, cylinder head, grub screw, hex head, low head, pan head, and self-tapping variants)
 - **Emboss depth**: 0.4 mm — two layers at 0.2 mm layer height, which prints solidly with a clean color change

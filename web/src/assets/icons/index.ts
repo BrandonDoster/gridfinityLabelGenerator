@@ -52,6 +52,7 @@ const DEFS: IconDef[] = [
   { id: "nylock",       label: "Nylock",       file: "nylock.svg",       viewBox: "477 549 137 120", kind: "symbol" },
   { id: "phillips",     label: "Phillips",     file: "phillips.svg",     viewBox: "81 51 112 112",   kind: "symbol" },
   { id: "slot",         label: "Slot",         file: "slot.svg",         viewBox: "35 125 125 113",  kind: "symbol" },
+  { id: "robertson",    label: "Robertson",    file: "robertson.svg",    viewBox: "341 505 112 112", kind: "symbol" },
   { id: "torx",         label: "Torx",         file: "torx.svg",         viewBox: "541 127 112 112", kind: "symbol" },
   { id: "washer",       label: "Washer",       file: "washer.svg",       viewBox: "38 280 112 112",  kind: "symbol" },
   { id: "washer_large", label: "Washer L",     file: "washer_large.svg", viewBox: "48 421 112 112",  kind: "symbol" },

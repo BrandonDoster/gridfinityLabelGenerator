@@ -1,0 +1,7 @@
+<svg viewBox="0 0 793.70079 1122.5197" width="793.70079" height="1122.5197" xmlns="http://www.w3.org/2000/svg">
+  <desc>Robertson (square-drive) screw head — head ring + square drive, filled for both 2D preview and 3D extrude.</desc>
+  <!-- Head outline as a filled ring: outer circle (sweep 0) + inner circle (sweep 1, opposite winding) → hole under nonzero fill. -->
+  <path d="M 343,561 a 54,54 0 1,0 108,0 a 54,54 0 1,0 -108,0 Z M 349,561 a 48,48 0 1,1 96,0 a 48,48 0 1,1 -96,0 Z" />
+  <!-- Square drive recess. -->
+  <path d="M 375,539 H 419 V 583 H 375 Z" />
+</svg>
