@@ -72,7 +72,8 @@ The non-obvious choices behind the current pipeline — worth knowing before cha
 - **The whole inlay is one mesh.** Line 1 + line 2 + icon are merged into a single `<mesh>` of disconnected triangle islands. Slicers never auto-split a single mesh, so everything-that-isn't-the-base stays one paintable child.
 - **Vertices are deduped before export (`mergeVertices`, 1e-4 mm).** STL/`ExtrudeGeometry` output is non-indexed — every triangle owns 3 unique vertices. Written straight to 3MF, OrcaSlicer reports *every* edge as non-manifold (the classic "26112 non-manifold edges"). Dedup → indexed geometry → clean slice. **This step is load-bearing; don't remove it.**
 - **Bambu/Orca need their own naming file.** Those slicers ignore the 3MF `name` attribute and read part names from a proprietary `Metadata/model_settings.config`. We always emit it (other slicers ignore it harmlessly), including per-part `extruder` slot numbers (body=1, inlay=2). Prusa honors the standard `name`; Cura ignores the config but still reads `name`.
-- **Per-STL profiles.** Each base design is a `BaseStlProfile` declaring its dimensions, content boxes, emboss height, Z convention (`raisedZ: "in"` fills a recess, `"above"` rides on top), flush support, and optional widening. One generator reads from the active profile — adding a base STL is a config object, not a new code path.
+- **Per-STL profiles, defined once.** Each base design is one entry in `profiles.tsx` declaring its dimensions, content boxes, emboss height, Z convention (`raisedZ: "in"` fills a recess, `"above"` rides on top), flush support, and optional widening. The generator reads it, and the **same entry supplies (or derives) the 2D preview** — so a label type lives in exactly one place, not split across the generator and the preview.
+- **Icons are one manifest.** Every clipart symbol and screw-profile image is a single row in `web/src/assets/icons/index.ts`; the SVGs are auto-loaded from that folder via `import.meta.glob`. The pickers, the predefined-label lookups, and the preview all read from it — adding an icon is a file drop plus one row.
 - **Raised vs flush.** Raised places the inlay above/into the surface (no CSG). Flush carves the inlay out of the body with manifold-3d so the top is dead-flat; it's only enabled on profiles with `supportsFlush`, and a flush request silently downgrades to raised elsewhere.
 - **Everything is lazy.** Three.js + the label builder + the 3MF writer load on first Download; the ~190 kB-gzip manifold wasm loads on first flush. Initial page load stays small (~63 kB gzip).
 
@@ -90,9 +91,9 @@ web/                         React + Vite front-end — this is what gets deploy
       labelGenerator.ts      Profile-driven mesh builder (text/SVG → geometry, widening, CSG hook)
       threeMfExporter.ts     Hand-rolled 3MF zip writer (assembly + Bambu config)
       csg.ts                 manifold-3d wrapper for flush mode (lazy)
-      profiles.ts            BaseStlProfile constants (Pred, Cullenect) — main-chunk, no Three.js
+      profiles.tsx           Profile registry: generation params + 2D preview, Pred + Cullenect (main-chunk, no Three.js)
       api.ts                 Predefined-label catalogue + download orchestration
-    assets/                  SVG clipart + screw-profile images (imported at build time)
+    assets/icons/            SVG clipart + screw-profile images, plus index.ts — the single icon manifest
   public/                    Base STLs, fonts, images served as-is
 server/                      Legacy Express prototype (unmaintained, not used by the deployed site)
 new_assets/                  Staging area for artwork not yet wired into the app
@@ -102,13 +103,17 @@ new_assets/                  Staging area for artwork not yet wired into the app
 
 For the full developer reference — coordinate systems, the exact 3MF XML, the CSG carve, hot-spots, and gotchas — see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-> Heads-up: the icon registries are currently duplicated across `LabelForm.tsx` (UI pickers) and
-> `api.ts` (predefined-label icons). A data-driven manifest that auto-discovers `assets/` and reads
-> per-icon config from a single file is in progress — this section will be updated when it lands.
+**Add an icon** — drop the SVG into `web/src/assets/icons/` and add one row to the `DEFS` array in [`web/src/assets/icons/index.ts`](web/src/assets/icons/index.ts):
 
-**Add a base STL design:** add a `BaseStlProfile` to `services/profiles.ts` (dimensions, content boxes, `embossHeight`, `raisedZ`, `supportsFlush`, optional `widening`), register it in `PROFILES`/`listProfiles`, add a matching `PreviewProfile` in `LabelPreview.tsx`, and drop the `.stl` into `web/public/`.
+```ts
+{ id: "my-icon", label: "My Icon", file: "my-icon.svg", viewBox: "0 0 100 100", kind: "symbol" },
+```
 
-**Add an icon (today):** drop the SVG in `web/src/assets/`, import it `?raw`, and add an entry (with a cropped `viewBox`) to `CLIPARTS` or `LINE2_IMAGES` in `LabelForm.tsx`; to also offer it on predefined labels, add it to `ICON_SVGS`/`ICON_VIEWBOXES` in `api.ts`.
+`kind` is `"symbol"` (left clipart picker) or `"line2"` (bottom screw-profile picker). The SVG is auto-loaded from that folder, and the icon then appears in the picker automatically — the UI, the predefined-label lookups, and the preview all read from this one manifest. `viewBox` crops the (often A4-canvas) source SVG down to its drawing region. To put an icon on a predefined label, set that label's `icon` to your new `id` in `web/src/services/api.ts`.
+
+**Add a base STL design** — drop the `.stl` into `web/public/` and add one `BaseStlProfileEntry` to [`web/src/services/profiles.tsx`](web/src/services/profiles.tsx): the generation fields (`contentOrigin`, content boxes, `embossHeight`, `raisedZ`, `supportsFlush`, optional `widening`) plus `previewSize`, then register it in the `PROFILES` map. The 2D preview is derived automatically (content boxes → preview boxes, default rounded-rect outline); add an explicit `preview` override only if the face needs a custom outline or hand-placed boxes, as Pred does for its snap-tab shape.
+
+**Add a predefined label** — append a row to `PREDEFINED_DATA` in `web/src/services/api.ts`.
 
 ## Develop & deploy
 

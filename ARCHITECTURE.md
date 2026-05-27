@@ -19,7 +19,7 @@ services/api.ts  — downloadSingle / downloadBatch
         │  dynamic import → lazy chunk
         ▼
 services/labelGenerator.ts  — buildLabelMeshes(label) → { baseGeometry, inlayGeometry }
-  1. Resolve profile (services/profiles.ts)
+  1. Resolve profile (services/profiles.tsx)
   2. Lazy-fetch the profile's base STL + font
   3. Clone base mesh, optionally widen (Pred 2×/3×)
   4. Build inlay meshes (text + icon)
@@ -41,10 +41,10 @@ services/threeMfExporter.ts  — buildThreeMf({ title, parts }) → ArrayBuffer
 
 ## Base STL profiles
 
-Each base design is a `BaseStlProfile` in `web/src/services/profiles.ts`. A profile owns its asset path, content-box anchors, and emboss semantics, so adding a design is appending a constant rather than branching the generator.
+Each base design is a single `BaseStlProfileEntry` in `web/src/services/profiles.tsx`. One entry owns the generation params (asset path, content boxes, emboss semantics) **and** the 2D-preview face, so adding a design is appending one constant — no generator branching, and no separate preview definition to keep in sync.
 
 ```ts
-interface BaseStlProfile {
+interface BaseStlProfileEntry {
   id: "pred" | "cullenect";          // extend the union for new designs
   displayName: string;                // shown in the UI selector
   assetPath: string;                  // relative to BASE_URL (in web/public/)
@@ -56,8 +56,12 @@ interface BaseStlProfile {
   raisedZ: "in" | "above";            // raised-mode Z convention
   supportsFlush: boolean;             // can CSG-carve for flush mode
   widening?: { extraWidthPerUnit: number };  // omit → 1U only
+  previewSize: { width: number; height: number };  // visible face (mm) for the preview
+  preview?: { /* optional box/outline overrides; otherwise derived (see below) */ };
 }
 ```
+
+`getPreviewLayout(profile)` resolves the preview: each box not overridden is derived by Y-flipping the matching content box, and the outline defaults to a rounded rectangle of `previewSize`. Cullenect uses pure derivation; Pred overrides every box plus the outline for its snap-tab shape.
 
 **Pred Gridfinity (`PRED_PROFILE`)** — 37.8×11.5×0.8 mm; snap tabs extend X bounds to `[-1.5, 36.3]`. Recessed interior with a raised perimeter. `contentOrigin (1.5, 0.5)`, `embossHeight 0.4`, `raisedZ "in"` (inlay fills the recess from `topZ-0.4` to `topZ`, top coplanar with the perimeter). `supportsFlush false` (the recess wouldn't carve cleanly). `widening { extraWidthPerUnit: 42 }` for 1×/2×/3×.
 
@@ -87,7 +91,7 @@ Three independent spaces show up in the code. Mixing them up is the #1 source of
 
 (`eh` = `profile.embossHeight`, 0.4 mm for both.)
 
-**2. SVG screen space (2D preview, picker thumbnails).** Origin top-left, **Y grows down** — opposite of 3D. Per-profile preview layouts live in `LabelPreview.tsx` (`PRED_PREVIEW`, `CULLENECT_PREVIEW`) with dimensions, Y-pre-flipped content boxes, and an outline renderer. These do **not** share constants with the 3D boxes — move one, move the other.
+**2. SVG screen space (2D preview, picker thumbnails).** Origin top-left, **Y grows down** — opposite of 3D. `getPreviewLayout()` in `profiles.tsx` resolves each profile's preview face: by default it Y-flips the generation content boxes into preview boxes and draws a rounded-rect outline; a profile may override any of that (Pred does, for its snap-tab outline). `LabelPreview.tsx` just consumes the resolved layout.
 
 **3. Source SVG space (raw assets).** Most assets in `web/src/assets/` have an A4 viewBox (≈793.7×1122.5) with the drawing in a small region; each consumer pairs the asset with an explicit `viewBox` crop. The 3D extruder ignores the crop (it measures the parsed path bounds), but the 2D previews need it — so an asset's paths must sit somewhere visible.
 
@@ -155,7 +159,7 @@ Three chunk groups, split by `await import(…)` boundaries:
 | `labelGenerator-*.js` + `threeMfExporter-*.js` (Three.js + builder + 3MF writer) | ~58 kB | First Download |
 | `manifold-*.js` + `*.wasm` + `csg-*.js` | ~204 kB | First Flush export |
 
-`api.ts`'s `loadGenerator()` dynamic-imports the generator + exporter; `labelGenerator.ts`'s flush branch dynamic-imports `csg.ts`, which chains to manifold. Profile constants live in `services/profiles.ts` (not `labelGenerator.ts`) precisely so `App.tsx`'s selector can read them at page load **without** pulling Three.js across the lazy boundary. A static import from any UI file into `labelGenerator.ts`/`csg.ts` collapses the chunks back into one.
+`api.ts`'s `loadGenerator()` dynamic-imports the generator + exporter; `labelGenerator.ts`'s flush branch dynamic-imports `csg.ts`, which chains to manifold. Profile constants live in `services/profiles.tsx` (not `labelGenerator.ts`) precisely so `App.tsx`'s selector can read them at page load **without** pulling Three.js across the lazy boundary. A static import from any UI file into `labelGenerator.ts`/`csg.ts` collapses the chunks back into one.
 
 ---
 
@@ -174,15 +178,15 @@ Three chunk groups, split by `await import(…)` boundaries:
 | Task | Where |
 |------|-------|
 | Text tracking / font-size search | `labelGenerator.ts` (`TRACKING`, `chooseTextSizeForBox`) |
-| Emboss depth / content boxes for an STL | `profiles.ts` (`embossHeight`, `iconBox`, `line1Box`, `line2Box`, `contentOrigin`) |
-| Add a base STL design | STL → `web/public/`; `BaseStlProfile` + `PROFILES` entry in `profiles.ts`; extend `BaseStlProfileId` in `types/label.ts`; matching preview layout in `LabelPreview.tsx` |
+| Emboss depth / content boxes for an STL | `profiles.tsx` (`embossHeight`, `iconBox`, `line1Box`, `line2Box`, `contentOrigin`) |
+| Add a base STL design | STL → `web/public/`; one `BaseStlProfileEntry` in `profiles.tsx` (generation fields + `previewSize`) registered in `PROFILES`; extend `BaseStlProfileId` in `types/label.ts`. Preview auto-derives unless you add a `preview` override |
 | Inlay Z per mode | `labelGenerator.ts` (`inlayZ()`) |
 | The CSG carve | `csg.ts` + the flush branch of `buildLabelMeshes` |
 | 3MF XML / Bambu config / slots | `threeMfExporter.ts` |
-| Move boxes in the 2D preview | `LabelPreview.tsx` (`PRED_PREVIEW`/`CULLENECT_PREVIEW`) — keep in sync with `profiles.ts` |
-| Add an icon | drop SVG in `web/src/assets/`, `?raw`-import + `viewBox` in `LabelForm.tsx`; for predefined use, add to `ICON_SVGS`/`ICON_VIEWBOXES`/`IconKey` in `api.ts` |
+| Move boxes in the 2D preview | the profile's `preview` override in `profiles.tsx` — or just move the content boxes, which the preview derives from |
+| Add an icon | drop SVG in `web/src/assets/icons/` + one row in `icons/index.ts` (`id`/`label`/`file`/`viewBox`/`kind`); for predefined use, set the label's `icon` id in `api.ts` |
 | Add a predefined label | append to `PREDEFINED_DATA` in `api.ts` |
-| 2×/3× width math (Pred) | `labelGenerator.ts` (`widenGeometry`, `contentXOffset`); `widening` in `profiles.ts` |
+| 2×/3× width math (Pred) | `labelGenerator.ts` (`widenGeometry`, `contentXOffset`); `widening` in `profiles.tsx` |
 | Deployed URL / build base | `vite.config.ts` (`base`), `.github/workflows/deploy.yml`, Pages custom-domain setting |
 
 ---
@@ -191,7 +195,7 @@ Three chunk groups, split by `await import(…)` boundaries:
 
 - **`mergeVertices` is load-bearing.** Without `mergeVertices(1e-4)` on every geometry, slicers report `3 × triangleCount` non-manifold edges. Don't remove it.
 - **Per-call module state in `labelGenerator.ts`.** `activeProfile`, `activeLoaded`, `activeFont`, `activeMode`, `contentXOffset` are module-level mutables set at the top of each `buildLabelMeshes` call; helpers read them as globals. **Not concurrent-safe** — sequential calls only.
-- **2D preview and 3D mesh are separate, per-profile renderers.** Move a box in `profiles.ts` → also move it in `LabelPreview.tsx`.
+- **2D preview and 3D mesh share one profile source.** Preview boxes derive from the generation content boxes (Y-flipped) unless a profile sets an explicit `preview` override — there's no second file to keep in sync.
 - **Bambu/Orca naming needs `Metadata/model_settings.config`.** They ignore the 3MF `name` attribute; Prusa/Cura use it. We emit both.
 - **Flush silently downgrades to raised** on profiles without `supportsFlush` (defense-in-depth; the UI also hides the toggle).
 - **Flush needs a 2-manifold base STL** or manifold-3d throws.
