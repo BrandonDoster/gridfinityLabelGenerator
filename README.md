@@ -34,7 +34,7 @@ A 36×11 mm flat-bodied alternative, 1U wide. Text and icons either ride on top 
 
 - **Custom label** — enter your own text and pick an icon. Exports a single file.
 - **Predefined labels** — select from a curated catalogue of CNC Kitchen fasteners and inserts. One label exports a single file; multiple export a `.zip` with one file per label.
-- **Output** — the **Output** selector (top bar) chooses **Pred Gridfinity** or **Cullenect V2** (printable 3D `.3mf` models) or **PNG** (a print-ready, black-on-transparent image of the label face at true physical size — for label printers such as the Brother P-touch). PNG follows the same single-file / zip-for-multiple behaviour.
+- **Output** — the **Output** selector (top bar) chooses **Pred Gridfinity** or **Cullenect V2** (printable 3D `.3mf` models) or **PNG** (a print-ready, black-on-transparent image of the label face at true physical size — for label printers such as the Brother P-touch). PNG follows the same single-file / zip-for-multiple behaviour. Exported filenames carry the type (`-pred` / `-cullenect` / `-png`) so the variants don't collide on download.
 
 Predefined categories: heat inserts (metric M2–M10, imperial #2-56–3/8″-16), socket-head cap screws (M1.6–M5, labelled with Torx drive size TX5–TX25), and hex nuts / nylock nuts / standard washers / large washers (M2–M8).
 

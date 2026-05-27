@@ -207,7 +207,7 @@ export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob;
   const used = new Set<string>();
   for (const label of labels) {
     const buffer = await generateLabel3mf(label);
-    files[uniqueName(slugify(label.title) + ".3mf", used)] = new Uint8Array(buffer);
+    files[uniqueName(`${slugify(label.title)}-${label.baseProfileId ?? "pred"}.3mf`, used)] = new Uint8Array(buffer);
   }
   const zipped = zipSync(files, { level: 9 });
   const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
@@ -231,7 +231,7 @@ export async function downloadBatchPng(labels: LabelInput[]): Promise<{ blob: Bl
   const used = new Set<string>();
   for (const label of labels) {
     const png = await buildLabelPng(label);
-    files[uniqueName(slugify(label.title) + ".png", used)] = new Uint8Array(await png.arrayBuffer());
+    files[uniqueName(`${slugify(label.title)}-png.png`, used)] = new Uint8Array(await png.arrayBuffer());
   }
   const zipped = zipSync(files, { level: 9 });
   const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;

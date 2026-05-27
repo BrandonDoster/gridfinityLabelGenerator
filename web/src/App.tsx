@@ -15,7 +15,7 @@ function slugifyTitle(value: string): string {
     .replace(/(^-|-$)/g, "") || "label";
 }
 
-function buildBatchZipFileName(date = new Date()): string {
+function buildBatchZipFileName(typeToken: string, date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -23,7 +23,7 @@ function buildBatchZipFileName(date = new Date()): string {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const seconds = String(date.getSeconds()).padStart(2, "0");
 
-  return `${year}${month}${day}-${hours}${minutes}${seconds}_batchExport.zip`;
+  return `${year}${month}${day}-${hours}${minutes}${seconds}_${typeToken}_batchExport.zip`;
 }
 
 export function App() {
@@ -52,14 +52,16 @@ export function App() {
     run();
   }, []);
 
+  // Output type for filenames: "pred" / "cullenect" for 3MF, "png" for images —
+  // so exporting the same label as different types doesn't collide on download.
+  const typeToken = exportFormat === "png" ? "png" : baseProfileId;
+  const ext = exportFormat === "png" ? "png" : "3mf";
+
   const handleCustom = async (input: LabelInput) => {
     setError("");
     const tagged = { ...input, baseProfileId, embossMode };
-    if (exportFormat === "png") {
-      saveBlob(await downloadSinglePng(tagged), `${slugifyTitle(input.title)}.png`);
-    } else {
-      saveBlob(await downloadSingle(tagged), `${slugifyTitle(input.title)}.3mf`);
-    }
+    const blob = exportFormat === "png" ? await downloadSinglePng(tagged) : await downloadSingle(tagged);
+    saveBlob(blob, `${slugifyTitle(input.title)}-${typeToken}.${ext}`);
   };
 
   const handleBatch = async (selected: PredefinedLabel[]) => {
@@ -67,12 +69,12 @@ export function App() {
     const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode }));
     const result = exportFormat === "png" ? await downloadBatchPng(tagged) : await downloadBatch(tagged);
     if (result.isZip) {
-      saveBlob(result.blob, buildBatchZipFileName());
+      saveBlob(result.blob, buildBatchZipFileName(typeToken));
       return;
     }
 
     const single = selected[0];
-    saveBlob(result.blob, `${slugifyTitle(single.title)}.${exportFormat === "png" ? "png" : "3mf"}`);
+    saveBlob(result.blob, `${slugifyTitle(single.title)}-${typeToken}.${ext}`);
   };
 
   // When the base STL changes, re-emit the current preview label so the
