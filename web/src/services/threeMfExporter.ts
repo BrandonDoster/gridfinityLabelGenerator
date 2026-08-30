@@ -24,7 +24,7 @@ const REL_TYPE_3DMODEL = "http://schemas.microsoft.com/3dmanufacturing/2013/01/3
 const CT_3DMODEL = "application/vnd.ms-package.3dmanufacturing-3dmodel+xml";
 const CT_RELS = "application/vnd.openxmlformats-package.relationships+xml";
 
-export interface ThreeMfPart {
+interface ThreeMfPart {
   geometry: BufferGeometry;
   name: string;
   /**
@@ -42,7 +42,7 @@ export interface ThreeMfPart {
   extruder?: number;
 }
 
-export interface ThreeMfInput {
+interface ThreeMfInput {
   title: string;
   parts: ThreeMfPart[];
 }

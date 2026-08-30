@@ -49,7 +49,7 @@ export function centerBox(a: Box, b: Box): Box {
 }
 
 /** Smallest rect covering both — gives a lone line 1 the full content height. */
-export function unionRect(a: Rect, b: Rect): Rect {
+function unionRect(a: Rect, b: Rect): Rect {
   return {
     x1: Math.min(a.x1, b.x1),
     y1: Math.min(a.y1, b.y1),
@@ -59,7 +59,7 @@ export function unionRect(a: Rect, b: Rect): Rect {
 }
 
 /** Same union in Y-down space. */
-export function unionBox(a: Box, b: Box): Box {
+function unionBox(a: Box, b: Box): Box {
   const x = Math.min(a.x, b.x);
   const y = Math.min(a.y, b.y);
   return {

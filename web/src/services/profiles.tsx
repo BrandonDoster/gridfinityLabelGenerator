@@ -12,9 +12,9 @@ import type { BaseStlProfile, BaseStlProfileId, ContentRect } from "../types/lab
 // Preview coordinate space: (0,0) top-left, Y down. Boxes are pre-flipped from
 // the 3D world (where Y grows up), so line 1 sits at the top with the smaller Y.
 
-export interface PreviewBox { x: number; y: number; w: number; h: number; }
+interface PreviewBox { x: number; y: number; w: number; h: number; }
 
-export interface PreviewLayout {
+interface PreviewLayout {
   width: number;          // visible label face width (mm)
   height: number;         // visible label face height (mm)
   vbMargin: number;       // viewBox padding so the outline stroke isn't clipped
@@ -25,7 +25,7 @@ export interface PreviewLayout {
 }
 
 // A registry entry: the generation profile plus its 2D-preview face.
-export interface BaseStlProfileEntry extends BaseStlProfile {
+interface BaseStlProfileEntry extends BaseStlProfile {
   /** Visible label-face size (mm) used by the 2D preview. */
   previewSize: { width: number; height: number };
   /**
@@ -112,7 +112,7 @@ export const PRED_PROFILE: BaseStlProfileEntry = {
  * its boxes derive from the content boxes and its outline is the default
  * rounded rectangle.
  */
-export const CULLENECT_PROFILE: BaseStlProfileEntry = {
+const CULLENECT_PROFILE: BaseStlProfileEntry = {
   id: "cullenect",
   displayName: "Cullenect V2",
   assetPath: "CullenectBinLabel.stl",

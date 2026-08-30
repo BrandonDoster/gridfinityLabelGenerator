@@ -3,9 +3,9 @@
 // below — no import statements, no other files to touch. The raw SVG markup is
 // auto-loaded from this directory at build time via import.meta.glob.
 
-export type IconKind = "symbol" | "line2";
+type IconKind = "symbol" | "line2";
 
-export interface IconDef {
+interface IconDef {
   /** Stable id, unique across all kinds. Referenced by the UI pickers and by PredefinedLabel.icon. */
   id: string;
   /** Label shown under the picker thumbnail. */
@@ -73,7 +73,7 @@ const DEFS: IconDef[] = [
 ];
 
 /** Every icon, resolved with its raw SVG markup. */
-export const ICONS: Icon[] = DEFS.map((d) => ({ ...d, svg: rawFor(d.file) }));
+const ICONS: Icon[] = DEFS.map((d) => ({ ...d, svg: rawFor(d.file) }));
 
 const BY_ID = new Map<string, Icon>(ICONS.map((i) => [i.id, i]));
 
