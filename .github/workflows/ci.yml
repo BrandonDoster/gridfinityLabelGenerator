@@ -1,0 +1,108 @@
+name: CI
+
+# Gate for pull requests into main. Tests run first; the build only runs if
+# they pass. Nothing here runs on push/merge — deploy.yml owns post-merge.
+on:
+  pull_request:
+    branches: [main]
+
+# A new push to the PR cancels the in-flight run for that PR.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Decides whether this PR touches anything worth testing. Docs-only PRs skip
+  # the suite and the build. This is a job rather than `paths-ignore` on the
+  # trigger so the `gate` check below always reports a result — a required
+  # check that never reports blocks the PR forever.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        name: Detect non-documentation changes
+        run: |
+          files=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          echo "Changed files:"; echo "$files"
+          # Anything that is not a top-level .md, LICENSE or .gitignore counts
+          # as code. Test files deliberately count as code: changing a test is
+          # exactly when the suite needs to run.
+          if [ -z "$files" ]; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          elif echo "$files" | grep -qvE '^([^/]*\.md|LICENSE|\.gitignore)$'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 22, not 20: npm run check runs the .check.ts scripts under plain node,
+      # which needs native TypeScript type-stripping (Node >= 22.6).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Self-checks
+        working-directory: web
+        run: npm run check
+
+      - name: Tests
+        working-directory: web
+        run: npm test
+
+  build:
+    needs: [changes, test]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+  # Single required status check. Green when the jobs above passed or were
+  # legitimately skipped; red if any of them failed or was cancelled. Point
+  # branch protection at this one job, not at test/build directly.
+  gate:
+    needs: [changes, test, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any job failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+
+      - name: Pass
+        run: echo "CI gate passed (code=${{ needs.changes.outputs.code }})"
