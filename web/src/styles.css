@@ -399,44 +399,25 @@ button:disabled {
   color: #e2e8f0;
 }
 
-/* Fastener size grid */
+/* Fastener size batch — one button per diameter, per format */
 
-.size-grid-scroll {
-  overflow-x: auto;
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.size-grid {
-  border-collapse: collapse;
-  font-size: 13px;
+.batch-label {
+  font-size: 14px;
+  color: #cbd5e1;
+  min-width: 128px;
 }
 
-.size-grid th,
-.size-grid td {
-  padding: 2px 4px;
-  text-align: center;
-  font-weight: 400;
-}
-
-/* Row/column headings act as toggle-the-whole-group buttons, so they opt out
-   of the page's green submit-button styling. */
-.size-grid th button {
-  all: unset;
-  display: block;
-  padding: 3px 6px;
-  min-width: 24px;
-  border-radius: 6px;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.size-grid th button:hover {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-
-.size-grid input {
-  margin: 0;
-  cursor: pointer;
+.batch-row button {
+  margin-top: 0;
+  flex: 1;
+  min-width: 68px;
 }
 
 @media (max-width: 800px) {

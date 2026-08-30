@@ -23,39 +23,6 @@ body.t-current {
   --head-case:none; --head-track:0; --head-weight:700;
 }
 
-/* ---- Theme 2: Paper — warm light, print-shop. Ink on stock, one hot accent  */
-body.t-paper {
-  --bg:#efe9dc; --panel:#fdfbf6; --panel-focus:#fbf6ea;
-  --border:#ddd3c0; --border-focus:#c2703c; --field:#fffefb;
-  --text:#2a251d; --muted:#6f6555; --dim:#948977;
-  --accent:#b8531f; --accent-ink:#fff8f2; --accent-soft:#f3e2d4; --accent-soft-ink:#8c3d13;
-  --label-body:#e7dfcd; --label-edge:#b9ac93; --label-face:#fdfbf6; --label-ink:#2a251d;
-  --radius:4px; --radius-sm:3px; --head-font:"Iowan Old Style",Georgia,serif;
-  --head-case:none; --head-track:0; --head-weight:600;
-}
-
-/* ---- Theme 3: Clean — neutral light SaaS. Safe, legible, unopinionated ---- */
-body.t-clean {
-  --bg:#f4f6f8; --panel:#ffffff; --panel-focus:#f8fbff;
-  --border:#e3e8ee; --border-focus:#2563eb; --field:#fbfcfd;
-  --text:#0f1729; --muted:#5b6779; --dim:#8b95a5;
-  --accent:#2563eb; --accent-ink:#ffffff; --accent-soft:#e5edff; --accent-soft-ink:#1d4ed8;
-  --label-body:#e8ecf1; --label-edge:#b7c0cd; --label-face:#ffffff; --label-ink:#0f1729;
-  --radius:12px; --radius-sm:8px; --head-font:Inter,system-ui,sans-serif;
-  --head-case:none; --head-track:-0.01em; --head-weight:700;
-}
-
-/* ---- Theme 4: Workshop — warm dark, amber. Tool catalogue / bench ---------- */
-body.t-workshop {
-  --bg:#151209; --panel:#211c11; --panel-focus:#2a2315;
-  --border:#3d3423; --border-focus:#8a6d28; --field:#191509;
-  --text:#f2e9d6; --muted:#a8977a; --dim:#8b7d61;
-  --accent:#e0a032; --accent-ink:#231903; --accent-soft:#4a3611; --accent-soft-ink:#f0c675;
-  --label-body:#2a2315; --label-edge:#6b5a38; --label-face:#191509; --label-ink:#f2e9d6;
-  --radius:3px; --radius-sm:2px; --head-font:"Helvetica Neue",Inter,sans-serif;
-  --head-case:uppercase; --head-track:0.06em; --head-weight:800;
-}
-
 /* ---- Theme 5: Blueprint — navy + cyan, technical drawing ------------------ */
 body.t-blueprint {
   --bg:#071827; --panel:#0d2739; --panel-focus:#123350;
@@ -76,6 +43,39 @@ body.t-mono {
   --label-body:#1c1c1c; --label-edge:#525252; --label-face:#0a0a0a; --label-ink:#fafafa;
   --radius:0px; --radius-sm:0px; --head-font:Inter,system-ui,sans-serif;
   --head-case:uppercase; --head-track:-0.02em; --head-weight:800;
+}
+
+/* ---- Theme 7: Carbon — Mono's black + hard edges, cyan instead of lime ----- */
+body.t-carbon {
+  --bg:#0a0a0a; --panel:#141414; --panel-focus:#12202a;
+  --border:#2b2b2b; --border-focus:#2f7799; --field:#0a0a0a;
+  --text:#f0f0f0; --muted:#9a9a9a; --dim:#6a6a6a;
+  --accent:#3da9d9; --accent-ink:#04161f; --accent-soft:#123141; --accent-soft-ink:#7cc7e8;
+  --label-body:#1c1c1c; --label-edge:#525252; --label-face:#0a0a0a; --label-ink:#fafafa;
+  --radius:0px; --radius-sm:0px; --head-font:Inter,system-ui,sans-serif;
+  --head-case:uppercase; --head-track:-0.02em; --head-weight:800;
+}
+
+/* ---- Theme 8: Ink — Blueprint pushed darker, mono caps kept ---------------- */
+body.t-ink {
+  --bg:#060d15; --panel:#0b1723; --panel-focus:#102232;
+  --border:#1b3346; --border-focus:#3d8fb8; --field:#050b12;
+  --text:#d6e4f0; --muted:#7d9ab0; --dim:#55708a;
+  --accent:#4a9fd4; --accent-ink:#03141f; --accent-soft:#0d3149; --accent-soft-ink:#8fcdec;
+  --label-body:#102232; --label-edge:#37769c; --label-face:#050b12; --label-ink:#dceefb;
+  --radius:2px; --radius-sm:2px; --head-font:ui-monospace,"SF Mono",Menlo,monospace;
+  --head-case:uppercase; --head-track:0.1em; --head-weight:600;
+}
+
+/* ---- Theme 9: Graphite — neutral black, desaturated steel. The quiet one --- */
+body.t-graphite {
+  --bg:#0d0d0f; --panel:#17171a; --panel-focus:#1d1e23;
+  --border:#2c2d32; --border-focus:#5b7f9e; --field:#0d0d0f;
+  --text:#e8e8ea; --muted:#98999f; --dim:#6c6d74;
+  --accent:#6d94b3; --accent-ink:#0b141b; --accent-soft:#22323f; --accent-soft-ink:#a3c6df;
+  --label-body:#1d1e23; --label-edge:#4e5057; --label-face:#0d0d0f; --label-ink:#e8e8ea;
+  --radius:2px; --radius-sm:2px; --head-font:Inter,system-ui,sans-serif;
+  --head-case:none; --head-track:-0.01em; --head-weight:700;
 }
 
 /* ===================== layout — identical for every theme ================== */
@@ -125,10 +125,9 @@ button:disabled{background:var(--dim);color:var(--panel);cursor:not-allowed}
 .width-selector{display:flex;align-items:center;justify-content:space-between;font-size:14px}
 .download-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-.size-grid{border-collapse:collapse;font-size:13px}
-.size-grid th,.size-grid td{padding:2px 4px;text-align:center;font-weight:400}
-.size-grid th span{display:block;padding:3px 6px;border-radius:var(--radius-sm);color:var(--muted);cursor:pointer}
-.size-grid input{width:auto;accent-color:var(--accent)}
+.batch-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.batch-label{font-size:14px;color:var(--muted);min-width:128px}
+.batch-row button{flex:1;min-width:68px}
 
 .preview-svg{width:100%;height:auto;display:block}
 
@@ -144,11 +143,11 @@ button:disabled{background:var(--dim);color:var(--panel);cursor:not-allowed}
 <div class="switcher" id="switcher">
   <strong style="font-size:13px">Theme</strong>
   <button data-t="t-current"   data-note="Current — slate + green. Your baseline.">Current</button>
-  <button data-t="t-paper"     data-note="Paper — warm light, serif headings, terracotta. Print-shop / label-maker.">Paper</button>
-  <button data-t="t-clean"     data-note="Clean — neutral light, blue accent, soft corners. Safe and legible.">Clean</button>
-  <button data-t="t-workshop"  data-note="Workshop — warm dark, amber, hard corners, caps headings. Tool catalogue.">Workshop</button>
-  <button data-t="t-blueprint" data-note="Blueprint — navy + cyan, mono headings, sharp edges. Technical drawing.">Blueprint</button>
-  <button data-t="t-mono"      data-note="Mono — near-black, zero radius, one loud accent. Brutalist.">Mono</button>
+  <button data-t="t-blueprint" data-note="Blueprint — navy + cyan, mono caps headings, sharp edges.">Blueprint</button>
+  <button data-t="t-mono"      data-note="Mono — near-black, zero radius, neon lime. The accent you flagged as too bright.">Mono</button>
+  <button data-t="t-carbon"    data-note="Carbon — Mono's black and hard edges, cyan accent. No yellow anywhere.">Carbon</button>
+  <button data-t="t-ink"       data-note="Ink — Blueprint pushed darker. Navy panels, mono caps, softer cyan.">Ink</button>
+  <button data-t="t-graphite"  data-note="Graphite — neutral black, desaturated steel blue, no caps. The quiet one.">Graphite</button>
   <span class="note" id="note">Current — slate + green. Your baseline.</span>
 </div>
 
@@ -256,11 +255,16 @@ button:disabled{background:var(--dim);color:var(--panel);cursor:not-allowed}
     <!-- ========================= Fastener Sizes panel ======================= -->
     <section class="panel">
       <h2>Fastener Sizes</h2>
-      <p class="panel-subtitle">Exports one label per checked size, using the design above for the icon, line 2 and width. Click a row or column heading to toggle it.</p>
-      <div style="overflow-x:auto"><table class="size-grid" id="grid"></table></div>
-      <div class="download-row">
-        <button type="button">Download 3MFs (20)</button>
-        <button type="button">Download PNGs (20)</button>
+      <p class="panel-subtitle">One click per diameter: exports all 15 lengths (4–50 mm) as a single zip, using the design above.</p>
+      <div class="batch-row">
+        <span class="batch-label">Download 3MFs</span>
+        <button type="button">M2</button><button type="button">M2.5</button><button type="button">M3</button>
+        <button type="button">M4</button><button type="button">M5</button><button type="button">M6</button>
+      </div>
+      <div class="batch-row">
+        <span class="batch-label">Download PNGs</span>
+        <button type="button">M2</button><button type="button">M2.5</button><button type="button">M3</button>
+        <button type="button">M4</button><button type="button">M5</button><button type="button">M6</button>
       </div>
     </section>
   </div>
@@ -282,14 +286,6 @@ document.getElementById("symbols").innerHTML = GLYPHS.map(([name, g], i) =>
   `<button type="button" class="symbol-item${i === 1 ? " selected" : ""}">
      <svg width="40" height="40" viewBox="0 0 40 40">${g}</svg><span>${name}</span></button>`
 ).join("");
-
-// --- size grid --------------------------------------------------------------
-const LENGTHS = [4,6,8,10,12,14,16,18,20,25,30,35,40,45,50];
-const DIAMETERS = ["M2","M2.5","M3","M4","M5","M6"];
-document.getElementById("grid").innerHTML =
-  `<thead><tr><th><span>All</span></th>${LENGTHS.map(l => `<th><span>${l}</span></th>`).join("")}</tr></thead>` +
-  `<tbody>${DIAMETERS.map(d => `<tr><th><span>${d}</span></th>${LENGTHS.map(l =>
-     `<td><input type="checkbox"${(d === "M3" || l === 10) ? " checked" : ""}></td>`).join("")}</tr>`).join("")}</tbody>`;
 
 // --- switcher ---------------------------------------------------------------
 const note = document.getElementById("note");

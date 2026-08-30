@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { LabelForm } from "./components/LabelForm";
 import { LabelPreview } from "./components/LabelPreview";
-import { SizeGrid } from "./components/SizeGrid";
+import { SizeBatch } from "./components/SizeBatch";
 import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng } from "./services/api";
 import { saveBlob } from "./services/download";
 import { getProfile, listProfiles } from "./services/profiles";
@@ -237,7 +237,7 @@ export function App() {
           iconControls={placementControls("icon")}
           preview={<LabelPreview label={previewLabel} />}
         />
-        <SizeGrid template={previewLabel} onGenerate={handleBatch} />
+        <SizeBatch template={previewLabel} onGenerate={handleBatch} />
       </div>
     </main>
   );
