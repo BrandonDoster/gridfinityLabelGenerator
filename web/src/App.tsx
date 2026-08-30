@@ -210,20 +210,14 @@ export function App() {
     <main className="app">
       <header>
         <h1>Gridfinity Label Generator</h1>
-      </header>
-
-      <div className="info-box">
-        <p>
+        <p className="tagline">
           Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for{" "}
           <a href="https://www.printables.com/model/592545-gridfinity-bin-with-printable-label-by-pred-parame" target="_blank" rel="noopener noreferrer">
             Gridfinity bins
           </a>
-          . Print settings, base designs, and tips are in the{" "}
-          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator#readme" target="_blank" rel="noopener noreferrer">README</a>
-          . Found a bug or want a feature?{" "}
-          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">Open an issue</a>.
+          .
         </p>
-      </div>
+      </header>
 
       {error ? <p className="error">{error}</p> : null}
 
@@ -239,6 +233,15 @@ export function App() {
         />
         <SizeBatch template={previewLabel} onGenerate={handleBatch} />
       </div>
+
+      <footer className="site-footer">
+        <p>
+          Print settings, base designs, and tips are in the{" "}
+          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator#readme" target="_blank" rel="noopener noreferrer">README</a>
+          . Found a bug or want a feature?{" "}
+          <a href="https://github.com/BrandonDoster/gridfinityLabelGenerator/issues" target="_blank" rel="noopener noreferrer">Open an issue</a>.
+        </p>
+      </footer>
     </main>
   );
 }

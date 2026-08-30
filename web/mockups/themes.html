@@ -45,29 +45,7 @@ body.t-mono {
   --head-case:uppercase; --head-track:-0.02em; --head-weight:800;
 }
 
-/* ---- Theme 7: Carbon — Mono's black + hard edges, cyan instead of lime ----- */
-body.t-carbon {
-  --bg:#0a0a0a; --panel:#141414; --panel-focus:#12202a;
-  --border:#2b2b2b; --border-focus:#2f7799; --field:#0a0a0a;
-  --text:#f0f0f0; --muted:#9a9a9a; --dim:#6a6a6a;
-  --accent:#3da9d9; --accent-ink:#04161f; --accent-soft:#123141; --accent-soft-ink:#7cc7e8;
-  --label-body:#1c1c1c; --label-edge:#525252; --label-face:#0a0a0a; --label-ink:#fafafa;
-  --radius:0px; --radius-sm:0px; --head-font:Inter,system-ui,sans-serif;
-  --head-case:uppercase; --head-track:-0.02em; --head-weight:800;
-}
-
-/* ---- Theme 8: Ink — Blueprint pushed darker, mono caps kept ---------------- */
-body.t-ink {
-  --bg:#060d15; --panel:#0b1723; --panel-focus:#102232;
-  --border:#1b3346; --border-focus:#3d8fb8; --field:#050b12;
-  --text:#d6e4f0; --muted:#7d9ab0; --dim:#55708a;
-  --accent:#4a9fd4; --accent-ink:#03141f; --accent-soft:#0d3149; --accent-soft-ink:#8fcdec;
-  --label-body:#102232; --label-edge:#37769c; --label-face:#050b12; --label-ink:#dceefb;
-  --radius:2px; --radius-sm:2px; --head-font:ui-monospace,"SF Mono",Menlo,monospace;
-  --head-case:uppercase; --head-track:0.1em; --head-weight:600;
-}
-
-/* ---- Theme 9: Graphite — neutral black, desaturated steel. The quiet one --- */
+/* ---- Theme 7: Graphite — neutral black, desaturated steel. The quiet one --- */
 body.t-graphite {
   --bg:#0d0d0f; --panel:#17171a; --panel-focus:#1d1e23;
   --border:#2c2d32; --border-focus:#5b7f9e; --field:#0d0d0f;
@@ -78,17 +56,52 @@ body.t-graphite {
   --head-case:none; --head-track:-0.01em; --head-weight:700;
 }
 
+/* ---------------------------------------------------------------------------
+   Themes 8-10 are one theme with three accents. Shared chassis:
+     - Graphite's neutral greys, so no panel reads as tinted
+     - Blueprint's mono caps headings
+     - sharp 2px corners throughout
+     - a NEUTRAL focused-panel lift (--panel-focus / --border-focus carry no
+       hue), so the active panel brightens instead of turning blue
+   Only --accent* differs between them. Colour lives on controls, not chrome.
+   --------------------------------------------------------------------------- */
+body.t-cyan, body.t-crimson, body.t-rust {
+  --bg:#0c0c0e; --panel:#161619; --panel-focus:#1e1f24;
+  --border:#2b2c31; --border-focus:#4a4c53; --field:#0a0a0c;
+  --text:#e9e9ec; --muted:#9a9ba2; --dim:#6c6d75;
+  --label-body:#1d1e23; --label-edge:#4e5057; --label-face:#0a0a0c; --label-ink:#e9e9ec;
+  --radius:2px; --radius-sm:2px; --head-font:ui-monospace,"SF Mono",Menlo,monospace;
+  --head-case:uppercase; --head-track:0.08em; --head-weight:600;
+}
+
+/* ---- Theme 8: Cyan — saturated, so nothing reads as disabled -------------- */
+body.t-cyan {
+  --accent:#2fa8d5; --accent-ink:#04161f; --accent-soft:#123644; --accent-soft-ink:#7fcbe8;
+}
+
+/* ---- Theme 9: Crimson — same brightness as the cyan, opposite side -------- */
+body.t-crimson {
+  --accent:#dd5757; --accent-ink:#1f0505; --accent-soft:#3f1b1b; --accent-soft-ink:#f0a0a0;
+}
+
+/* ---- Theme 10: Rust — deeper, earthier red. No yellow in it --------------- */
+body.t-rust {
+  --accent:#c4553a; --accent-ink:#1b0703; --accent-soft:#3d1d12; --accent-soft-ink:#e59b81;
+}
+
 /* ===================== layout — identical for every theme ================== */
 *{box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text);transition:background .2s}
 .app{max-width:1100px;margin:0 auto;padding:24px}
-h1{font-family:var(--head-font);text-transform:var(--head-case);letter-spacing:var(--head-track);font-weight:var(--head-weight);font-size:2rem;margin:0 0 20px}
+h1{font-family:var(--head-font);text-transform:var(--head-case);letter-spacing:var(--head-track);font-weight:var(--head-weight);font-size:2rem;margin:0}
 h2{font-family:var(--head-font);text-transform:var(--head-case);letter-spacing:var(--head-track);font-weight:var(--head-weight);font-size:1.5rem;margin:0}
 
-.info-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:.875rem;color:var(--muted)}
-.info-box p{margin:0;line-height:1.5}
-.info-box strong{color:var(--text)}
-.info-box a{color:var(--accent);text-decoration:none}
+header{margin-bottom:20px}
+.tagline{margin:3px 0 0;font-size:.9rem;line-height:1.5;color:var(--muted)}
+.tagline strong{color:var(--text)}
+.site-footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+.site-footer p{margin:0;line-height:1.5}
+.tagline a,.site-footer a{color:var(--accent);text-decoration:none}
 
 .layout{display:flex;flex-direction:column;gap:16px}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px}
@@ -138,27 +151,25 @@ button:disabled{background:var(--dim);color:var(--panel);cursor:not-allowed}
 .switcher .note{margin-left:auto;font-size:12px;color:var(--dim);font-style:italic}
 </style>
 </head>
-<body class="t-current">
+<body class="t-cyan">
 
 <div class="switcher" id="switcher">
   <strong style="font-size:13px">Theme</strong>
+  <button data-t="t-cyan"      data-note="Cyan — Graphite's neutral greys, mono caps, sharp corners, saturated cyan. Focused panel lifts grey, not blue.">Cyan</button>
+  <button data-t="t-crimson"   data-note="Crimson — same chassis, red at the same brightness as the cyan.">Crimson</button>
+  <button data-t="t-rust"      data-note="Rust — same chassis, deeper earthier red. No yellow in it.">Rust</button>
+  <span style="width:1px;height:24px;background:var(--border)"></span>
+  <button data-t="t-graphite"  data-note="Graphite — the desaturated original. Here to compare against.">Graphite</button>
+  <button data-t="t-blueprint" data-note="Blueprint — navy panels. Here to compare the blue tint against.">Blueprint</button>
   <button data-t="t-current"   data-note="Current — slate + green. Your baseline.">Current</button>
-  <button data-t="t-blueprint" data-note="Blueprint — navy + cyan, mono caps headings, sharp edges.">Blueprint</button>
-  <button data-t="t-mono"      data-note="Mono — near-black, zero radius, neon lime. The accent you flagged as too bright.">Mono</button>
-  <button data-t="t-carbon"    data-note="Carbon — Mono's black and hard edges, cyan accent. No yellow anywhere.">Carbon</button>
-  <button data-t="t-ink"       data-note="Ink — Blueprint pushed darker. Navy panels, mono caps, softer cyan.">Ink</button>
-  <button data-t="t-graphite"  data-note="Graphite — neutral black, desaturated steel blue, no caps. The quiet one.">Graphite</button>
-  <span class="note" id="note">Current — slate + green. Your baseline.</span>
+  <span class="note" id="note">Cyan — Graphite greys, mono caps, sharp corners, saturated cyan.</span>
 </div>
 
 <main class="app">
-  <h1>Gridfinity Label Generator</h1>
-
-  <div class="info-box">
-    <p>Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for
-      <a href="#">Gridfinity bins</a>. Print settings, base designs, and tips are in the
-      <a href="#">README</a>. Found a bug or want a feature? <a href="#">Open an issue</a>.</p>
-  </div>
+  <header>
+    <h1>Gridfinity Label Generator</h1>
+    <p class="tagline">Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for <a href="#">Gridfinity bins</a>.</p>
+  </header>
 
   <div class="layout">
     <!-- ============================ Design panel ============================ -->
@@ -268,6 +279,11 @@ button:disabled{background:var(--dim);color:var(--panel);cursor:not-allowed}
       </div>
     </section>
   </div>
+
+  <footer class="site-footer">
+    <p>Print settings, base designs, and tips are in the <a href="#">README</a>.
+       Found a bug or want a feature? <a href="#">Open an issue</a>.</p>
+  </footer>
 </main>
 
 <script>
@@ -296,7 +312,7 @@ document.getElementById("switcher").addEventListener("click", (e) => {
   note.textContent = b.dataset.note;
   document.querySelectorAll("#switcher button").forEach(x => x.classList.toggle("on", x === b));
 });
-document.querySelector('#switcher button[data-t="t-current"]').classList.add("on");
+document.querySelector('#switcher button[data-t="t-cyan"]').classList.add("on");
 </script>
 </body>
 </html>
