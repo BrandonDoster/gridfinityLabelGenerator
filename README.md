@@ -86,7 +86,7 @@ web/                         React + Vite front-end — this is what gets deploy
     App.tsx                  Top-level state: base-STL + emboss-mode selectors, preview wiring
     components/
       LabelForm.tsx          "Create your own" form + the icon / line-2-image pickers
-      PredefinedSelector.tsx Catalogue tree + export options
+      SizeBatch.tsx          One batch-export button per screw diameter
       LabelPreview.tsx       Live 2D SVG preview (per-profile layout)
     services/
       labelGenerator.ts      Profile-driven mesh builder (text/SVG → geometry, widening, CSG hook)
@@ -97,9 +97,9 @@ web/                         React + Vite front-end — this is what gets deploy
       pngExporter.ts         Label face → print-ready PNG (black on transparent, lazy)
       layout.ts              Auto-layout when the symbol / line 2 is off (shared by all three renderers)
       placement.ts           Per-element X/Y/size nudges applied on top of the profile defaults
+      textMetrics.ts         Canvas ink measurement, so SVG text matches the 3MF
     assets/icons/            SVG clipart + screw-profile images, plus index.ts — the single icon manifest
-  public/                    Base STLs, fonts, images served as-is
-new_assets/                  Staging area for artwork not yet wired into the app
+  public/                    Base STLs and the font, served as-is
 ```
 
 ## Extending

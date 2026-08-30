@@ -4,9 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "node scripts/write-build-info.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/write-build-info.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "check": "node src/services/placement.check.ts && node src/services/layout.check.ts"
