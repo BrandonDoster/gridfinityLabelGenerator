@@ -21,7 +21,7 @@ import type {
 } from "../types/label";
 import { PRED_PROFILE, getProfile } from "./profiles";
 import { DEFAULT_PLACEMENTS, adjustRect, type Placements } from "./placement";
-import { centerRect, hasLine2 } from "./layout";
+import { resolveRects } from "./layout";
 
 // Tighter letter spacing: each glyph's horizontal advance is reduced by this
 // factor. Glyphs themselves are unchanged (no squishing), only the gaps between
@@ -277,7 +277,11 @@ function buildIconMesh(iconSvg: string): Mesh | null {
 }
 
 function chooseTextSizeForBox(text: string, maxWidth: number, maxHeight: number): number {
-  let size = 6;
+  // Start above what the box can hold and shrink until it fits. Cap height is
+  // roughly 0.7x the font size, so 1.4x maxHeight always overshoots. The 6 floor
+  // keeps the classic two-line result bit-identical for the standard 4.25 mm
+  // slots (4.25 * 1.4 = 5.95, below 6); only a grown box starts higher.
+  let size = Math.max(6, maxHeight * 1.4);
   const minSize = 1.2;
   while (size > minSize) {
     const bounds = getTextBounds(text, size);
@@ -329,15 +333,11 @@ function createTextLineMesh(
 }
 
 function buildTextMeshes(label: LabelInput): Mesh[] {
-  // With line 2 off, line 1 drops to the middle of the content area instead of
-  // staying in the top slot. Same box size, so the fitted font size is unchanged.
-  // Centring is measured against the profile's default line-2 slot, not the
-  // nudged one — line 2's nudge is irrelevant when line 2 isn't rendered.
-  const line1Rect = hasLine2(label)
-    ? activeProfile.line1Box
-    : centerRect(activeProfile.line1Box, activeProfile.line2Box);
-  const topBox = toWorldBox(adjustRect(line1Rect, activePlacement.line1));
-  const line2Rect = adjustRect(activeProfile.line2Box, activePlacement.line2);
+  // Symbol / line-2 auto-layout (services/layout.ts) resolves the default slots
+  // first; the placement nudge is then an offset from wherever that put them.
+  const slots = resolveRects(label, activeProfile);
+  const topBox = toWorldBox(adjustRect(slots.line1, activePlacement.line1));
+  const line2Rect = adjustRect(slots.line2, activePlacement.line2);
   const bottomBox = toWorldBox(line2Rect);
   const topSize = getBoxSize(topBox);
   const bottomSize = getBoxSize(bottomBox);

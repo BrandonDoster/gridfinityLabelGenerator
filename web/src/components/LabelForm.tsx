@@ -81,12 +81,17 @@ export function LabelForm({
   // Pre-selected so the default Image mode has something to render.
   const [selectedLine2Image, setSelectedLine2Image] = useState<string | null>("shcs");
   const [selectedClipart, setSelectedClipart] = useState<string | null>("hex");
+  // Separate from the selection so switching Off and back On restores the same
+  // clipart, the way line 2's Off keeps its picked image.
+  const [symbolOn, setSymbolOn] = useState(true);
   const [labelWidth, setLabelWidth] = useState<1 | 2 | 3>(1);
   // Which download is running, so only that button shows its spinner.
   const [busy, setBusy] = useState<ExportFormat | null>(null);
 
   function buildLabel(): LabelInput {
-    const clip = getIcon(selectedClipart ?? undefined);
+    // Symbol Off emits an empty iconSvg, which every renderer reads as "no
+    // symbol" and widens both text lines for (services/layout.ts).
+    const clip = symbolOn ? getIcon(selectedClipart ?? undefined) : undefined;
     const iconSvg = clip?.svg ?? "";
     const iconViewBox = clip?.viewBox;
     // "off" emits an empty line 2, which every renderer reads as "single line"
@@ -107,7 +112,7 @@ export function LabelForm({
   useEffect(() => {
     if (!onPreviewChange) return;
     onPreviewChange(buildLabel());
-  }, [line1, line2, line2Mode, selectedLine2Image, selectedClipart, labelWidth, onPreviewChange]);
+  }, [line1, line2, line2Mode, selectedLine2Image, selectedClipart, symbolOn, labelWidth, onPreviewChange]);
 
   const handleFocusEnter = (e: React.FocusEvent<HTMLFormElement>) => {
     if (onPreviewChange && !e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -199,18 +204,28 @@ export function LabelForm({
       <div className="field">
         <div className="field-label-row">
           <span>Symbol</span>
+          <div className="mode-toggle">
+            <button type="button" className={symbolOn ? "active" : ""} onClick={() => setSymbolOn(true)}>
+              On
+            </button>
+            <button type="button" className={symbolOn ? "" : "active"} onClick={() => setSymbolOn(false)}>
+              Off
+            </button>
+          </div>
           {iconControls}
         </div>
-        <div className="symbol-picker">
-          {CLIPARTS.map((c) => (
-            <IconTile
-              key={c.id}
-              icon={c}
-              selected={selectedClipart === c.id}
-              onClick={() => setSelectedClipart((prev) => (prev === c.id ? null : c.id))}
-            />
-          ))}
-        </div>
+        {symbolOn ? (
+          <div className="symbol-picker">
+            {CLIPARTS.map((c) => (
+              <IconTile
+                key={c.id}
+                icon={c}
+                selected={selectedClipart === c.id}
+                onClick={() => setSelectedClipart((prev) => (prev === c.id ? null : c.id))}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="width-selector">
         <span>Label Width</span>

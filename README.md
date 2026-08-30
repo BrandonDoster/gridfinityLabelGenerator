@@ -95,9 +95,10 @@ web/                         React + Vite front-end — this is what gets deploy
       profiles.tsx           Profile registry: generation params + 2D preview, Pred + Cullenect (main-chunk, no Three.js)
       api.ts                 Predefined-label catalogue + download orchestration
       pngExporter.ts         Label face → print-ready PNG (black on transparent, lazy)
+      layout.ts              Auto-layout when the symbol / line 2 is off (shared by all three renderers)
+      placement.ts           Per-element X/Y/size nudges applied on top of the profile defaults
     assets/icons/            SVG clipart + screw-profile images, plus index.ts — the single icon manifest
   public/                    Base STLs, fonts, images served as-is
-server/                      Legacy Express prototype (unmaintained, not used by the deployed site)
 new_assets/                  Staging area for artwork not yet wired into the app
 ```
 

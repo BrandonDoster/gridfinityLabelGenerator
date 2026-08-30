@@ -204,4 +204,4 @@ Three chunk groups, split by `await import(…)` boundaries:
 - **Dynamic-import boundaries are deliberate** (see Code-splitting). A static import from a UI file into the generator/CSG collapses the chunks.
 - **GitHub Pages base path.** Reference runtime assets via `import.meta.env.BASE_URL`, never absolute `/asset.png`, or they 404 on a subpath. (The manifold wasm is exempt — Vite hashes it into `dist/assets/` and we hand manifold the URL.)
 - **`buildInfo.ts` is auto-generated** by `scripts/write-build-info.mjs` on every `predev`/`prebuild`. Don't edit or hand-commit it.
-- **`server/` is dead.** The legacy Express prototype still emits single-solid STL, uses `helvetiker_regular`, has no tracking/profiles/CSG, and ships a 6-label stub. Don't copy patterns from it or update it unless asked.
+- **There is no backend.** The upstream repo's `server/` Express prototype was deleted — the deployed site is `web/` only, and nothing fetches an API. Don't reintroduce one to solve a generation problem.
