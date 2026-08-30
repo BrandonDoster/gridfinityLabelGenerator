@@ -21,7 +21,7 @@ import type {
 } from "../types/label";
 import { PRED_PROFILE, getProfile } from "./profiles";
 import { DEFAULT_PLACEMENTS, adjustRect, type Placements } from "./placement";
-import { resolveRects } from "./layout";
+import { largestFittingSize, resolveRects } from "./layout";
 
 // Tighter letter spacing: each glyph's horizontal advance is reduced by this
 // factor. Glyphs themselves are unchanged (no squishing), only the gaps between
@@ -296,16 +296,20 @@ function chooseTextSizeForBox(text: string, maxWidth: number, maxHeight: number)
   // roughly 0.7x the font size, so 1.4x maxHeight always overshoots. The 6 floor
   // keeps the classic two-line result bit-identical for the standard 4.25 mm
   // slots (4.25 * 1.4 = 5.95, below 6); only a grown box starts higher.
-  let size = Math.max(6, maxHeight * 1.4);
-  const minSize = 1.2;
-  while (size > minSize) {
-    const bounds = getTextBounds(text, size);
-    const width = bounds ? bounds.max.x - bounds.min.x : 0;
-    const height = bounds ? bounds.max.y - bounds.min.y : 0;
-    if (width <= maxWidth && height <= maxHeight) return size;
-    size -= 0.1;
-  }
-  return minSize;
+  //
+  // largestFittingSize binary-searches that 0.1 grid rather than walking it —
+  // same grid, same result, ~6 triangulations instead of 18-70. See layout.ts.
+  return largestFittingSize(
+    (size) => {
+      const bounds = getTextBounds(text, size);
+      const width = bounds ? bounds.max.x - bounds.min.x : 0;
+      const height = bounds ? bounds.max.y - bounds.min.y : 0;
+      return width <= maxWidth && height <= maxHeight;
+    },
+    Math.max(6, maxHeight * 1.4),
+    1.2,
+    0.1,
+  );
 }
 
 function createTextLineMesh(
