@@ -6,3 +6,4 @@ web/dist/
 web/tsconfig.tsbuildinfo
 archive/
 newassets/.DS_Store
+.DS_Store
