@@ -20,15 +20,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 22, not 20: npm run check runs the .check.ts scripts under plain node,
+      # which needs native TypeScript type-stripping (Node >= 22.6).
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      # ci, not install: the lockfile is committed, so the deployed bundle is
+      # built from exactly the versions that were tested.
       - name: Install dependencies
         working-directory: web
-        run: npm install
+        run: npm ci
+
+      # ci.yml already gated the pull request. Repeated here because this
+      # workflow also runs on a direct push to main and on workflow_dispatch,
+      # neither of which passes through that gate.
+      - name: Self-checks
+        working-directory: web
+        run: npm run check
+
+      - name: Tests
+        working-directory: web
+        run: npm test
 
       - name: Build
         working-directory: web
