@@ -236,6 +236,7 @@ export function App() {
         <LabelForm
           onGenerate={handleCustom}
           onPreviewChange={handlePreviewChange}
+          widthSupported={Boolean(activeProfile.widening)}
           outputControls={outputControls}
           line1Controls={placementControls("line1")}
           line2Controls={placementControls("line2")}

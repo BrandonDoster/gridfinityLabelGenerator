@@ -56,6 +56,13 @@ function IconTile({
 interface LabelFormProps {
   onGenerate: (input: LabelInput, format: ExportFormat) => Promise<void>;
   onPreviewChange?: (label: LabelInput) => void;
+  /**
+   * Whether the active base profile can be widened past 1× (i.e. declares
+   * `widening`). False hides the width selector entirely — the generator
+   * ignores labelWidth without it, so showing 1×/2×/3× buttons that change
+   * nothing is worse than showing none.
+   */
+  widthSupported?: boolean;
   // Slots, not props: App owns the export settings and the preview label, and
   // just hands the rendered controls here so each one sits next to the thing it
   // changes. Keeps this component a layout — no setter drilling.
@@ -69,6 +76,7 @@ interface LabelFormProps {
 export function LabelForm({
   onGenerate,
   onPreviewChange,
+  widthSupported,
   outputControls,
   line1Controls,
   line2Controls,
@@ -107,6 +115,12 @@ export function LabelForm({
     const title = [line1, line2].filter(Boolean).join(" ");
     return { title, line1, line2, iconSvg, iconViewBox, labelWidth };
   }
+
+  // Switching to a profile that can't widen hides the selector; drop any stale
+  // 2×/3× with it, so the hidden value can't ride along into an export.
+  useEffect(() => {
+    if (!widthSupported) setLabelWidth(1);
+  }, [widthSupported]);
 
   // Emit preview on every change, and once on mount
   useEffect(() => {
@@ -227,22 +241,27 @@ export function LabelForm({
           </div>
         ) : null}
       </div>
-      <div className="width-selector">
-        <span>Label Width</span>
-        <div className="mode-toggle">
-          {([1, 2, 3] as const).map((w) => (
-            <button
-              key={w}
-              type="button"
-              className={labelWidth === w ? "active" : ""}
-              onClick={() => setLabelWidth(w)}
-              title={`${w}×  (${(37.8 + (w - 1) * 42).toFixed(1)} mm)`}
-            >
-              {w}×
-            </button>
-          ))}
+      {widthSupported ? (
+        <div className="width-selector">
+          <span>Label Width</span>
+          <div className="mode-toggle">
+            {([1, 2, 3] as const).map((w) => (
+              <button
+                key={w}
+                type="button"
+                className={labelWidth === w ? "active" : ""}
+                onClick={() => setLabelWidth(w)}
+                title={`${w}×  (${(37.8 + (w - 1) * 42).toFixed(1)} mm)`}
+              >
+                {w}×
+              </button>
+            ))}
+          </div>
+          {/* The PNG is a fixed 36×11 mm tape face — widening is 3MF-only, and
+              silently ignoring the setting on a PNG download was worse. */}
+          <span className="hint">3MF only — PNG export is always 1×.</span>
         </div>
-      </div>
+      ) : null}
       <div className="download-row">
         <button type="button" disabled={!canDownload} onClick={() => download("3mf")}>
           {busy === "3mf" ? "Generating..." : "Download 3MF"}
