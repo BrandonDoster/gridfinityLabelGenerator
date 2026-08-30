@@ -45,4 +45,14 @@ for (const a of [
   for (const k of ["x", "y", "w", "h"] as const) near(viaBox[k], viaRect[k], `${JSON.stringify(a)} ${k}`);
 }
 
+// 5. A typed-in scale of 0, a negative, or NaN must never reach the geometry:
+//    0 collapses the extruded mesh to a point and a negative mirrors it, which
+//    inverts triangle winding (non-manifold 3MF, CSG failure in flush mode).
+for (const scale of [0, -1, Number.NaN]) {
+  const r = adjustRect(RECT, { dx: 0, dy: 0, scale });
+  const b = adjustBox(toBox(RECT), { dx: 0, dy: 0, scale });
+  assert.ok(r.x2 > r.x1 && r.y2 > r.y1, `rect must stay positive-area at scale ${scale}`);
+  assert.ok(b.w > 0 && b.h > 0, `box must stay positive-area at scale ${scale}`);
+}
+
 console.log("placement: ok");

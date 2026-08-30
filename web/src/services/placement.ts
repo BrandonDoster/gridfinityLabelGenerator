@@ -36,6 +36,15 @@ export function isDefault(p: Placement): boolean {
   return p.dx === 0 && p.dy === 0 && p.scale === 1;
 }
 
+// Second line of defence for scale. App clamps what the number input writes,
+// but adjustRect/adjustBox are the one place all three spaces (3D, preview,
+// PNG) route through, so the invariant belongs here too: 0 collapses the box,
+// which collapses the extruded mesh to a point; a negative mirrors it, which
+// flips the text mesh's scale. Either way the 3MF is degenerate and flush-mode
+// CSG fails. NaN clamps as well — `NaN >= MIN_SCALE` is false.
+const MIN_SCALE = 0.1;
+const scaleOf = (a: Placement): number => (a.scale >= MIN_SCALE ? a.scale : MIN_SCALE);
+
 /** Y-up rectangle, as used by the 3D content space (services/labelGenerator). */
 interface Rect { x1: number; y1: number; x2: number; y2: number; }
 
@@ -44,8 +53,9 @@ interface Box { x: number; y: number; w: number; h: number; }
 
 /** Apply a nudge to a Y-up content rectangle (3D generation space). */
 export function adjustRect(box: Rect, a: Placement = DEFAULT_PLACEMENT): Rect {
-  const gx = ((box.x2 - box.x1) * (a.scale - 1)) / 2;
-  const gy = ((box.y2 - box.y1) * (a.scale - 1)) / 2;
+  const s = scaleOf(a);
+  const gx = ((box.x2 - box.x1) * (s - 1)) / 2;
+  const gy = ((box.y2 - box.y1) * (s - 1)) / 2;
   return {
     x1: box.x1 - gx + a.dx,
     y1: box.y1 - gy + a.dy,
@@ -56,10 +66,11 @@ export function adjustRect(box: Rect, a: Placement = DEFAULT_PLACEMENT): Rect {
 
 /** Apply a nudge to a Y-down box (2D preview / PNG space) — dy sign flips. */
 export function adjustBox(box: Box, a: Placement = DEFAULT_PLACEMENT): Box {
+  const s = scaleOf(a);
   return {
-    x: box.x - (box.w * (a.scale - 1)) / 2 + a.dx,
-    y: box.y - (box.h * (a.scale - 1)) / 2 - a.dy,
-    w: box.w * a.scale,
-    h: box.h * a.scale,
+    x: box.x - (box.w * (s - 1)) / 2 + a.dx,
+    y: box.y - (box.h * (s - 1)) / 2 - a.dy,
+    w: box.w * s,
+    h: box.h * s,
   };
 }

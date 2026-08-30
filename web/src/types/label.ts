@@ -12,7 +12,7 @@ export interface LabelInput {
   line2Svg?: string;    // SVG to render in the line-2 box instead of text
   line2ViewBox?: string; // viewBox crop for line2Svg (A4-canvas SVGs need cropping)
   labelWidth?: 1 | 2 | 3; // number of gridfinity units wide (37.8 + (n-1)*42 mm)
-  baseProfileId?: BaseStlProfileId; // which base STL design to render onto (default "pred")
+  baseProfileId?: BaseStlProfileId; // base STL design to render onto (default: DEFAULT_PROFILE_ID)
   embossMode?: EmbossMode; // raised vs flush — flush requires profile.supportsFlush
   placement?: Placements; // per-element nudge/scale on the profile's default boxes (default: no change)
 }
@@ -36,7 +36,7 @@ export type ExportFormat = "3mf" | "png";
 // Each base STL (Pred Gridfinity label, Cullenect V2, …) declares its asset
 // path, content-box anchors, and emboss semantics. Adding a new design is a
 // matter of defining a new BaseStlProfile constant and registering it in the
-// PROFILES map in labelGenerator.ts. See fork_decisions.md §D-017.
+// PROFILES map in services/profiles.tsx.
 // ---------------------------------------------------------------------------
 
 export type BaseStlProfileId = "pred" | "cullenect";
