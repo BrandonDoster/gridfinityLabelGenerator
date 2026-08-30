@@ -455,10 +455,11 @@ function mergeInlayMeshes(meshes: Mesh[]): BufferGeometry {
   if (baked.length === 1) return baked[0];
   const merged = mergeGeometries(baked, false);
   if (!merged) {
-    // Geometry attribute mismatch — should not happen since bakePositionOnly
-    // strips to position-only, but fall back to the first geometry rather
-    // than emit a broken 3MF.
-    return baked[0];
+    // Every input is position-only by construction (bakePositionOnly), so an
+    // attribute mismatch means a real invariant broke. Throw: the previous
+    // fallback to baked[0] silently dropped the other inlay parts, so text or
+    // the icon just vanished from the exported 3MF with no error anywhere.
+    throw new Error("Failed to merge inlay geometries");
   }
   return merged;
 }

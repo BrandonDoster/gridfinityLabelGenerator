@@ -105,7 +105,14 @@ export function App() {
   const handlePlacementChange = (part: keyof Placements, key: keyof Placement, raw: string) => {
     const value = Number(raw);
     if (!Number.isFinite(value)) return;
-    applyPlacement({ ...placement, [part]: { ...placement[part], [key]: value } });
+    // scale multiplies the box, so 0 (what an emptied field parses to) or a
+    // negative collapses/inverts every vertex — degenerate zero-area triangles
+    // in the 3MF, a negative font-size in the PNG, and non-manifold input to
+    // the flush-mode CSG. The input's min={0.1} is submit-time only and there
+    // is no submit, so clamp here: App owns the state every exporter reads.
+    // dx/dy are offsets — 0 and negatives are legitimate there.
+    const clamped = key === "scale" ? Math.max(0.1, value) : value;
+    applyPlacement({ ...placement, [part]: { ...placement[part], [key]: clamped } });
   };
 
   // Wrap setPreviewLabel so child-emitted previews always carry the active
