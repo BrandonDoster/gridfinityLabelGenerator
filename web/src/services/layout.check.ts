@@ -128,7 +128,7 @@ assert.ok(Math.abs(inkOf("M3x10", tallFit.fontSize).w - tall.w) < 1e-9, "ink mus
 assert.ok(inkOf("M3x10", tallFit.fontSize).h <= tall.h + 1e-9, "must stay inside height");
 
 // 14. Ink never escapes the box, for either limit, at any of the real slot sizes.
-for (const b of [tall, wide, { x: 0, y: 6.25, w: 21.3, h: 4.25 }]) {
+for (const b of [tall, wide, { x: 0, y: 6.25, w: 23.5, h: 4.25 }]) {
   for (const t of ["M", "M3x10", "WWWWWWWWWW"]) {
     const { fontSize } = fitText(t, b, fakeFont);
     const ink = inkOf(t, fontSize);

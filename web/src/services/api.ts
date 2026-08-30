@@ -1,5 +1,5 @@
-import { zip } from "fflate";
 import type { LabelInput } from "../types/label";
+import { DEFAULT_PROFILE_ID } from "./profiles";
 
 const THREE_MF_MIME = "model/3mf";
 
@@ -11,8 +11,14 @@ const THREE_MF_MIME = "model/3mf";
  *
  * Level 6 rather than 9: 3MF XML and PNG both land within a fraction of a
  * percent either way, and 9 costs several times the CPU for it.
+ *
+ * fflate is dynamic-imported rather than imported at the top: this module is
+ * loaded eagerly by App, and fflate's async `zip` inlines its worker source,
+ * so a static import drags ~1.3 KB gzip of it into the main chunk. Same D-020
+ * reasoning as loadGenerator below — nothing here is needed until a click.
  */
-function zipAsync(files: Record<string, Uint8Array>): Promise<Blob> {
+async function zipAsync(files: Record<string, Uint8Array>): Promise<Blob> {
+  const { zip } = await import("fflate");
   return new Promise((resolve, reject) => {
     zip(files, { level: 6 }, (err, data) => {
       if (err) return reject(err);
@@ -70,7 +76,10 @@ export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob;
   const used = new Set<string>();
   for (const label of labels) {
     const buffer = await generateLabel3mf(label);
-    files[uniqueName(`${slugify(label.title)}-${label.baseProfileId ?? "pred"}.3mf`, used)] = new Uint8Array(buffer);
+    // Must be the same fallback getProfile() uses, or the filename names a base
+    // the file was not generated from.
+    files[uniqueName(`${slugify(label.title)}-${label.baseProfileId ?? DEFAULT_PROFILE_ID}.3mf`, used)] =
+      new Uint8Array(buffer);
   }
   return { blob: await zipAsync(files), isZip: true };
 }

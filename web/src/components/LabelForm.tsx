@@ -107,10 +107,13 @@ export function LabelForm({
     if (line2Mode === "off") {
       return { title: line1, line1, line2: "", iconSvg, iconViewBox, labelWidth };
     }
-    if (line2Mode === "image" && selectedLine2Image) {
-      const img = getIcon(selectedLine2Image);
-      const title = [line1].filter(Boolean).join(" ");
-      return { title, line1, line2: "", iconSvg, iconViewBox, line2Svg: img?.svg, line2ViewBox: img?.viewBox, labelWidth };
+    // Image mode always emits an empty text line 2 — including when the picker
+    // has nothing selected (clicking the selected tile deselects it). Falling
+    // through to the text branch there would silently print the hidden line-2
+    // text field's value on the label.
+    if (line2Mode === "image") {
+      const img = selectedLine2Image ? getIcon(selectedLine2Image) : undefined;
+      return { title: line1, line1, line2: "", iconSvg, iconViewBox, line2Svg: img?.svg, line2ViewBox: img?.viewBox, labelWidth };
     }
     const title = [line1, line2].filter(Boolean).join(" ");
     return { title, line1, line2, iconSvg, iconViewBox, labelWidth };

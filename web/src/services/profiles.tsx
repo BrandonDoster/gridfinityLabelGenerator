@@ -67,10 +67,16 @@ export const PRED_PROFILE: BaseStlProfileEntry = {
   widening: { extraWidthPerUnit: 42 },
   previewSize: { width: 37.8, height: 11.5 },
   preview: {
-    // Hand-tuned to the snap-tab outline below — not derivable from content boxes.
+    // Not derivable by derivePreviewBox: the outline below starts at preview
+    // x=0 while the STL's bounds.min.x is world -1.5 (the snap tabs), so
+    // preview x = world x + 1.5. Widths and Y therefore match the content
+    // boxes exactly — anything else makes the preview disagree with the mesh
+    // the exporter actually builds.
+    //   iconBox  world X [1.5, 11]   -> preview [3.0,  12.5]
+    //   line1/2  world X [11,  34.5] -> preview [12.5, 36.0]
     iconBox:  { x: 3.0,  y: 1.0,  w: 9.5,  h: 9.5 },
-    line1Box: { x: 13.5, y: 1.0,  w: 21.3, h: 4.25 },
-    line2Box: { x: 13.5, y: 6.25, w: 21.3, h: 4.25 },
+    line1Box: { x: 12.5, y: 1.0,  w: 23.5, h: 4.25 },
+    line2Box: { x: 12.5, y: 6.25, w: 23.5, h: 4.25 },
     renderOutline: () => (
       <g transform={PRED_LABEL_TRANSFORM} strokeLinecap="round" strokeLinejoin="round">
         {/* Outer body (main rectangle + side tabs) */}
