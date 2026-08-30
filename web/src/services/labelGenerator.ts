@@ -57,15 +57,27 @@ let activeMode: EmbossMode = "raised";
 let activePlacement: Placements = DEFAULT_PLACEMENTS;
 let contentXOffset = 0; // shifts content right to centre it on wider labels
 
+// The asset caches below hold the in-flight promise, not the settled value, so
+// concurrent callers share one fetch. That means a *rejected* promise would
+// stay cached forever and every later export would re-throw the stale error —
+// one transient network blip bricks the page until reload. Both loaders evict
+// on rejection so the next call refetches. The `.catch` chain is discarded and
+// the original promise is returned, so the caller still sees the rejection;
+// having a handler attached is also what keeps it from surfacing as an
+// unhandled rejection when nothing else is awaiting it. Same shape in csg.ts.
 async function loadFont(): Promise<Font> {
   if (fontPromise) return fontPromise;
   const base = import.meta.env.BASE_URL;
-  fontPromise = (async () => {
+  const promise = (async () => {
     const resp = await fetch(`${base}helvetiker_bold.typeface.json`);
     if (!resp.ok) throw new Error("Failed to load font");
     return new FontLoader().parse(await resp.json());
   })();
-  return fontPromise;
+  promise.catch(() => {
+    if (fontPromise === promise) fontPromise = null;
+  });
+  fontPromise = promise;
+  return promise;
 }
 
 async function loadProfile(profile: BaseStlProfile): Promise<LoadedProfile> {
@@ -85,6 +97,9 @@ async function loadProfile(profile: BaseStlProfile): Promise<LoadedProfile> {
       contentOriginY: bounds.min.y + profile.contentOrigin.y,
     };
   })();
+  promise.catch(() => {
+    if (profileCache.get(profile.id) === promise) profileCache.delete(profile.id);
+  });
   profileCache.set(profile.id, promise);
   return promise;
 }

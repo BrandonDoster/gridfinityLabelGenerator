@@ -14,7 +14,7 @@ let runtimePromise: Promise<ManifoldToplevel> | null = null;
 
 async function loadRuntime(): Promise<ManifoldToplevel> {
   if (runtimePromise) return runtimePromise;
-  runtimePromise = (async () => {
+  const promise = (async () => {
     const [{ default: Module }, { default: wasmUrl }] = await Promise.all([
       import("manifold-3d"),
       // Vite asset import: emits the .wasm into the build and gives us its URL.
@@ -25,7 +25,14 @@ async function loadRuntime(): Promise<ManifoldToplevel> {
     runtime.setup();
     return runtime;
   })();
-  return runtimePromise;
+  // Evict on rejection: a cached rejected promise would make every later flush
+  // export re-throw the stale wasm-fetch error until the page reloads. The
+  // caller still gets the original rejection — see loadFont in labelGenerator.
+  promise.catch(() => {
+    if (runtimePromise === promise) runtimePromise = null;
+  });
+  runtimePromise = promise;
+  return promise;
 }
 
 /**
