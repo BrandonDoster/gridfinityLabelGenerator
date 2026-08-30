@@ -9,6 +9,7 @@ import {
   fitText,
   hasIcon,
   hasLine2,
+  largestFittingSize,
   resolveBoxes,
   resolveRects,
   type MeasureInk,
@@ -160,5 +161,47 @@ assert.ok(
 const empty = fitText("", tall, () => ({ width: 0, ascent: 0, descent: 0 }));
 assert.equal(empty.fontSize, 0);
 assert.ok(Number.isFinite(empty.baselineY));
+
+// ── Fitted-size search (must match the linear walk it replaced, exactly) ───
+
+// The walk largestFittingSize replaced, verbatim. The binary search is only
+// allowed to be faster, never to land on a different float — a mismatch here
+// means every exported label changes size.
+function linearScan(
+  fits: (size: number) => boolean,
+  start: number,
+  min: number,
+  step: number,
+): number {
+  for (let s = start; s > min; s -= step) if (fits(s)) return s;
+  return min;
+}
+
+// The generator's real arguments (min 1.2, step 0.1) plus the two start values
+// it actually produces — 6 for a standard 4.25 mm slot, 13.3 for a full-height
+// box — and the degenerate start-at-or-below-the-floor case.
+const MIN = 1.2;
+const STEP = 0.1;
+for (const start of [6, 5.95, 13.3, 1.3, 1.2, 0.5]) {
+  // Every grid point as a threshold, so "fits immediately at the start size"
+  // and "fits only at the floor" are both in here, plus the two extremes:
+  // Infinity fits everywhere, -Infinity fits nowhere (falls back to min).
+  const thresholds = [Infinity, -Infinity];
+  for (let s = start; s > MIN; s -= STEP) thresholds.push(s);
+  for (const threshold of thresholds) {
+    const fits = (s: number) => s <= threshold; // monotone, as the real one is
+    assert.equal(
+      largestFittingSize(fits, start, MIN, STEP),
+      linearScan(fits, start, MIN, STEP),
+      `search disagrees with the walk: start=${start} threshold=${threshold}`,
+    );
+  }
+}
+
+// 19. The search is a search, not a walk: probes must stay logarithmic in the
+//     grid size, or the triangulation cost this was written to cut is back.
+let probes = 0;
+largestFittingSize((s) => { probes++; return s <= 2; }, 13.3, MIN, STEP);
+assert.ok(probes <= 8, `expected a binary search, got ${probes} probes`);
 
 console.log("layout: ok");

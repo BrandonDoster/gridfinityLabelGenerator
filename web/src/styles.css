@@ -272,6 +272,11 @@ button:disabled {
   font-size: 14px;
 }
 
+.width-selector .hint {
+  color: var(--dim);
+  font-size: 12px;
+}
+
 /* Symbol picker.
    A grid rather than wrapped flex: tracks divide the row exactly, so the
    right edge is flush instead of leaving a ragged gutter. auto-fit (not

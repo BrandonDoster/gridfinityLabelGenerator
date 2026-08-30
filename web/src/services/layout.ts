@@ -109,6 +109,45 @@ export function fitText(
   return { fontSize, baselineY };
 }
 
+/**
+ * Largest size on the descending grid `start, start-step, start-step*2, …`
+ * (stopping at the last value still above `min`) for which `fits` returns
+ * true — or `min` when none of them does.
+ *
+ * `fits` is monotone: if a size fits, every smaller one does. So this
+ * binary-searches for the first true instead of walking the grid top-down.
+ * The 3D generator's predicate builds a ShapeGeometry — a full earcut
+ * triangulation — per probe, and the walk cost ~18 of them on a 4.25 mm slot
+ * and 70+ on a full-height box, per line, per label in a batch. The search
+ * costs ~6 regardless.
+ *
+ * The grid is materialised by repeated subtraction rather than
+ * `start - k * step` on purpose: the two disagree in the last bits of a float
+ * once the error accumulates, and the size this returns must stay identical
+ * to what the linear walk it replaced produced. Not a closed-form solve for
+ * the same reason — the 0.1 grid, the start value and the floor are all
+ * load-bearing for the shipped output.
+ */
+export function largestFittingSize(
+  fits: (size: number) => boolean,
+  start: number,
+  min: number,
+  step: number,
+): number {
+  const sizes: number[] = [];
+  for (let s = start; s > min; s -= step) sizes.push(s);
+  // Invariant: everything below `hi` is unprobed-or-fits, everything below
+  // `lo` is known not to fit. lo === sizes.length means nothing fit.
+  let lo = 0;
+  let hi = sizes.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (fits(sizes[mid])) hi = mid;
+    else lo = mid + 1;
+  }
+  return lo < sizes.length ? sizes[lo] : min;
+}
+
 /** Resolve the line-1 / line-2 slots for a label, Y-up (3D generation space). */
 export function resolveRects(label: LabelParts, slots: Slots<Rect>): { line1: Rect; line2: Rect } {
   const iconX1 = slots.iconBox.x1;

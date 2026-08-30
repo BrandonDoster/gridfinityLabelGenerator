@@ -21,7 +21,7 @@ import type {
 } from "../types/label";
 import { PRED_PROFILE, getProfile } from "./profiles";
 import { DEFAULT_PLACEMENTS, adjustRect, type Placements } from "./placement";
-import { resolveRects } from "./layout";
+import { largestFittingSize, resolveRects } from "./layout";
 
 // Tighter letter spacing: each glyph's horizontal advance is reduced by this
 // factor. Glyphs themselves are unchanged (no squishing), only the gaps between
@@ -57,15 +57,27 @@ let activeMode: EmbossMode = "raised";
 let activePlacement: Placements = DEFAULT_PLACEMENTS;
 let contentXOffset = 0; // shifts content right to centre it on wider labels
 
+// The asset caches below hold the in-flight promise, not the settled value, so
+// concurrent callers share one fetch. That means a *rejected* promise would
+// stay cached forever and every later export would re-throw the stale error —
+// one transient network blip bricks the page until reload. Both loaders evict
+// on rejection so the next call refetches. The `.catch` chain is discarded and
+// the original promise is returned, so the caller still sees the rejection;
+// having a handler attached is also what keeps it from surfacing as an
+// unhandled rejection when nothing else is awaiting it. Same shape in csg.ts.
 async function loadFont(): Promise<Font> {
   if (fontPromise) return fontPromise;
   const base = import.meta.env.BASE_URL;
-  fontPromise = (async () => {
+  const promise = (async () => {
     const resp = await fetch(`${base}helvetiker_bold.typeface.json`);
     if (!resp.ok) throw new Error("Failed to load font");
     return new FontLoader().parse(await resp.json());
   })();
-  return fontPromise;
+  promise.catch(() => {
+    if (fontPromise === promise) fontPromise = null;
+  });
+  fontPromise = promise;
+  return promise;
 }
 
 async function loadProfile(profile: BaseStlProfile): Promise<LoadedProfile> {
@@ -85,6 +97,9 @@ async function loadProfile(profile: BaseStlProfile): Promise<LoadedProfile> {
       contentOriginY: bounds.min.y + profile.contentOrigin.y,
     };
   })();
+  promise.catch(() => {
+    if (profileCache.get(profile.id) === promise) profileCache.delete(profile.id);
+  });
   profileCache.set(profile.id, promise);
   return promise;
 }
@@ -281,16 +296,20 @@ function chooseTextSizeForBox(text: string, maxWidth: number, maxHeight: number)
   // roughly 0.7x the font size, so 1.4x maxHeight always overshoots. The 6 floor
   // keeps the classic two-line result bit-identical for the standard 4.25 mm
   // slots (4.25 * 1.4 = 5.95, below 6); only a grown box starts higher.
-  let size = Math.max(6, maxHeight * 1.4);
-  const minSize = 1.2;
-  while (size > minSize) {
-    const bounds = getTextBounds(text, size);
-    const width = bounds ? bounds.max.x - bounds.min.x : 0;
-    const height = bounds ? bounds.max.y - bounds.min.y : 0;
-    if (width <= maxWidth && height <= maxHeight) return size;
-    size -= 0.1;
-  }
-  return minSize;
+  //
+  // largestFittingSize binary-searches that 0.1 grid rather than walking it —
+  // same grid, same result, ~6 triangulations instead of 18-70. See layout.ts.
+  return largestFittingSize(
+    (size) => {
+      const bounds = getTextBounds(text, size);
+      const width = bounds ? bounds.max.x - bounds.min.x : 0;
+      const height = bounds ? bounds.max.y - bounds.min.y : 0;
+      return width <= maxWidth && height <= maxHeight;
+    },
+    Math.max(6, maxHeight * 1.4),
+    1.2,
+    0.1,
+  );
 }
 
 function createTextLineMesh(
@@ -455,10 +474,11 @@ function mergeInlayMeshes(meshes: Mesh[]): BufferGeometry {
   if (baked.length === 1) return baked[0];
   const merged = mergeGeometries(baked, false);
   if (!merged) {
-    // Geometry attribute mismatch — should not happen since bakePositionOnly
-    // strips to position-only, but fall back to the first geometry rather
-    // than emit a broken 3MF.
-    return baked[0];
+    // Every input is position-only by construction (bakePositionOnly), so an
+    // attribute mismatch means a real invariant broke. Throw: the previous
+    // fallback to baked[0] silently dropped the other inlay parts, so text or
+    // the icon just vanished from the exported 3MF with no error anywhere.
+    throw new Error("Failed to merge inlay geometries");
   }
   return merged;
 }
