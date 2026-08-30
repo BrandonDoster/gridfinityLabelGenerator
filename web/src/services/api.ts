@@ -14,7 +14,7 @@ const THREE_MF_MIME = "model/3mf";
  *
  * fflate is dynamic-imported rather than imported at the top: this module is
  * loaded eagerly by App, and fflate's async `zip` inlines its worker source,
- * so a static import drags ~1.3 KB gzip of it into the main chunk. Same D-020
+ * so a static import drags ~1.3 KB gzip of it into the main chunk. Same
  * reasoning as loadGenerator below — nothing here is needed until a click.
  */
 async function zipAsync(files: Record<string, Uint8Array>): Promise<Blob> {
@@ -32,8 +32,9 @@ async function zipAsync(files: Record<string, Uint8Array>): Promise<Blob> {
 
 // Dynamic-import the heavy generator pipeline (Three.js + fflate + our
 // labelGenerator + threeMfExporter) so it's code-split into its own chunk.
-// Only fetched when the user actually clicks Download — see D-020.
-// Subsequent calls hit the browser's module cache instantly.
+// Only fetched when the user actually clicks Download, so a visitor who never
+// exports never pays for Three.js. Subsequent calls hit the browser's module
+// cache instantly.
 async function loadGenerator() {
   const [{ buildLabelMeshes }, { buildThreeMf }] = await Promise.all([
     import("./labelGenerator"),

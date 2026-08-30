@@ -14,8 +14,13 @@ import type { BufferGeometry } from "three";
 //                      all live in the same <mesh>, so the slicer treats
 //                      them as one paintable child rather than 50 parts)
 //
-// Why one merged mesh for inlays: see fork_decisions.md §D-006.
-// Why the components-assembly structure: see fork_decisions.md §D-005.
+// One merged mesh for the inlay: a slicer's "split to parts" never splits a
+// single <mesh>, so the letters and the icon stay one paintable child. Writing
+// them as separate objects produced ~50 parts per label instead.
+//
+// A <components> assembly for the structure: it is 3MF Core, so Orca, Prusa
+// and Cura all show one model with two named children without any
+// slicer-specific extension.
 
 const NS_3MF_CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02";
 const NS_RELS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -65,7 +70,7 @@ export function buildThreeMf(input: ThreeMfInput): ArrayBuffer {
       "3D/3dmodel.model": strToU8(modelXml),
       // Bambu Studio (and OrcaSlicer, a Bambu fork) read part names from this
       // file rather than the 3MF Core <object name="…"> attribute. Other slicers
-      // ignore it harmlessly. See fork_decisions.md §D-012.
+      // ignore it harmlessly, so it is always emitted.
       "Metadata/model_settings.config": strToU8(bambuConfigXml),
     },
     { level: 9 },
@@ -95,9 +100,10 @@ function buildContentTypesXml(): string {
 // Bambu Studio / OrcaSlicer per-part metadata file. Schema follows the
 // convention used by Bambu's own exporter: one <object> per build assembly,
 // with <part> children indexed by 3MF object id. We always emit "normal_part"
-// here; subtype="negative_part" is what Stage 4's flush mode could use as an
-// alternative to CSG, but D-001 picks manifold-3d CSG instead for slicer
-// portability.
+// here. subtype="negative_part" would be an alternative way to express flush
+// mode, but only Bambu Studio and OrcaSlicer honour it — flush instead carves
+// the cavity with manifold-3d CSG (services/csg.ts) so the exported geometry
+// is portable across every slicer.
 function buildBambuModelSettingsXml(title: string, parts: ThreeMfPart[]): string {
   const assemblyId = parts.length + 1;
   const identityMatrix = "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1";
