@@ -57,8 +57,12 @@ function iconEls(label: LabelInput, box: Box): string {
   return imageEl(label.iconSvg, label.iconViewBox ?? `0 0 ${A4_W} ${A4_H}`, box);
 }
 
-/** Build the standalone, print-ready SVG for a label face, plus its pixel size. */
-function buildLabelFaceSvg(label: LabelInput): { svg: string; pxW: number; pxH: number } {
+/**
+ * Build the standalone, print-ready SVG for a label face, plus its pixel size.
+ * Exported for tests: rasterizing needs a real canvas, but the layout this
+ * produces is assertable without one.
+ */
+export function buildLabelFaceSvg(label: LabelInput): { svg: string; pxW: number; pxH: number } {
   const pxW = Math.round(FACE.width * PX_PER_MM);
   const pxH = Math.round(FACE.height * PX_PER_MM);
 
