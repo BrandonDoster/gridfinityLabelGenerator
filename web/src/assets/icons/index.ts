@@ -62,16 +62,14 @@ const DEFS: IconDef[] = [
   { id: "roll-in_t_nut", label: "Roll Nut",    file: "roll-in-tnut.svg", viewBox: "-10 -10 100 170", kind: "symbol" },
 
   // Screw-profile images (line 2). viewBox crops each A4 canvas to the drawing.
-  { id: "cyl",      label: "Cylinder Head", file: "TRP_cylinderHeadScrew.svg",        viewBox: "19 1080 96 31",  kind: "line2" },
-  { id: "low",      label: "Low Head",      file: "TRP_lowHeadScrew.svg",             viewBox: "28 1042 93 32",  kind: "line2" },
-  { id: "btn",      label: "Button Head",   file: "TRP_ButtonHead.svg",               viewBox: "25 1070 93 29",  kind: "line2" },
-  { id: "pan",      label: "Pan Head",      file: "TRP_PanHead.svg",                  viewBox: "72 977 107 31",  kind: "line2" },
-  { id: "csk",      label: "Countersunk",   file: "TRP_countersunkHead.svg",          viewBox: "82 924 91 37",   kind: "line2" },
-  { id: "hex-head", label: "Hex Head",      file: "TRP_hexagonHead.svg",              viewBox: "12 1000 93 33",  kind: "line2" },
-  { id: "cyl-st",   label: "Cyl Self-Tap",  file: "TRP_cylinderHead_selfTapping.svg", viewBox: "133 400 103 35", kind: "line2" },
-  { id: "pan-st",   label: "Pan Self-Tap",  file: "TRP_panHead_selfTapping.svg",      viewBox: "134 329 97 33",  kind: "line2" },
-  { id: "csk-st",   label: "Csk Self-Tap",  file: "TRP_countersunk_selfTapping.svg",  viewBox: "136 255 98 38",  kind: "line2" },
-  { id: "grub",     label: "Grub Screw",    file: "TRP_grubscrew.svg",                viewBox: "84 265 44 22",   kind: "line2" },
+  { id: "shcs",     label: "Socket Head",    file: "TRP_cylinderHeadScrew.svg",       viewBox: "19 1080 96 31",  kind: "line2" },
+  { id: "bhcs",     label: "Button Head",    file: "TRP_buttonHead.svg",              viewBox: "25 1070 93 29",  kind: "line2" },
+  { id: "fhcs",     label: "Flat Head",      file: "TRP_flatHead.svg",                viewBox: "82 924 91 37",   kind: "line2" },
+  { id: "hex-head", label: "Hex Head",       file: "TRP_hexagonHead.svg",             viewBox: "12 1000 93 33",  kind: "line2" },
+  { id: "sh-st",    label: "SH Self-Tap",    file: "TRP_socketHead_selfTapping.svg",  viewBox: "133 400 103 35", kind: "line2" },
+  { id: "bh-st",    label: "BH Self-Tap",    file: "TRP_buttonHead_selfTapping.svg",  viewBox: "134 329 97 33",  kind: "line2" },
+  { id: "fh-st",    label: "FH Self-Tap",    file: "TRP_flatHead_selfTapping.svg",    viewBox: "136 255 98 38",  kind: "line2" },
+  { id: "pin-grub", label: "Pin/Grub Screw", file: "TRP_grubscrew.svg",               viewBox: "84 265 44 22",   kind: "line2" },
 ];
 
 /** Every icon, resolved with its raw SVG markup. */

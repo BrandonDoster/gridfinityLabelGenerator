@@ -79,7 +79,7 @@ export function LabelForm({
   const [line2, setLine2] = useState("Screw");
   const [line2Mode, setLine2Mode] = useState<"text" | "image" | "off">("image");
   // Pre-selected so the default Image mode has something to render.
-  const [selectedLine2Image, setSelectedLine2Image] = useState<string | null>("low");
+  const [selectedLine2Image, setSelectedLine2Image] = useState<string | null>("shcs");
   const [selectedClipart, setSelectedClipart] = useState<string | null>("torx");
   const [labelWidth, setLabelWidth] = useState<1 | 2 | 3>(1);
   // Which download is running, so only that button shows its spinner.
