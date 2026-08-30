@@ -6,5 +6,8 @@ export function saveBlob(blob: Blob, fileName: string): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  // Deferred, not immediate: the browser reads the object URL asynchronously
+  // after the click, and Safari aborts a multi-MB batch zip if it has already
+  // been revoked by the time it gets there.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

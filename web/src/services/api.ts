@@ -1,7 +1,28 @@
-import { zipSync } from "fflate";
+import { zip } from "fflate";
 import type { LabelInput } from "../types/label";
 
 const THREE_MF_MIME = "model/3mf";
+
+/**
+ * Zip a batch off the main thread. fflate's async `zip` spins up a worker, so
+ * deflating fifteen 3MFs no longer blocks paint and the export button's
+ * spinner keeps spinning. (The single-3MF write in threeMfExporter stays
+ * synchronous — one small file, inside the per-label work.)
+ *
+ * Level 6 rather than 9: 3MF XML and PNG both land within a fraction of a
+ * percent either way, and 9 costs several times the CPU for it.
+ */
+function zipAsync(files: Record<string, Uint8Array>): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    zip(files, { level: 6 }, (err, data) => {
+      if (err) return reject(err);
+      // Copy out to a plain ArrayBuffer: fflate types its output as
+      // Uint8Array<ArrayBufferLike>, which BlobPart won't take.
+      const buf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+      resolve(new Blob([buf], { type: "application/zip" }));
+    });
+  });
+}
 
 // Dynamic-import the heavy generator pipeline (Three.js + fflate + our
 // labelGenerator + threeMfExporter) so it's code-split into its own chunk.
@@ -51,9 +72,7 @@ export async function downloadBatch(labels: LabelInput[]): Promise<{ blob: Blob;
     const buffer = await generateLabel3mf(label);
     files[uniqueName(`${slugify(label.title)}-${label.baseProfileId ?? "pred"}.3mf`, used)] = new Uint8Array(buffer);
   }
-  const zipped = zipSync(files, { level: 9 });
-  const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
-  return { blob: new Blob([zipBuf], { type: "application/zip" }), isZip: true };
+  return { blob: await zipAsync(files), isZip: true };
 }
 
 // PNG export — the lightweight pngExporter (no Three.js) is code-split into its
@@ -75,9 +94,7 @@ export async function downloadBatchPng(labels: LabelInput[]): Promise<{ blob: Bl
     const png = await buildLabelPng(label);
     files[uniqueName(`${slugify(label.title)}-png.png`, used)] = new Uint8Array(await png.arrayBuffer());
   }
-  const zipped = zipSync(files, { level: 9 });
-  const zipBuf = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
-  return { blob: new Blob([zipBuf], { type: "application/zip" }), isZip: true };
+  return { blob: await zipAsync(files), isZip: true };
 }
 
 function uniqueName(name: string, used: Set<string>): string {
