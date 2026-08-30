@@ -113,16 +113,22 @@ header {
   flex-wrap: wrap;
 }
 
-/* Line 1 field on the left, live preview on the right */
-.line1-row {
+/* Both text lines on the left, live preview on the right */
+.design-top {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   align-items: center;
 }
 
+.design-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @media (max-width: 800px) {
-  .line1-row {
+  .design-top {
     grid-template-columns: 1fr;
   }
 }
@@ -265,11 +271,15 @@ button:disabled {
   font-size: 14px;
 }
 
-/* Symbol picker */
+/* Symbol picker.
+   A grid rather than wrapped flex: tracks divide the row exactly, so the
+   right edge is flush instead of leaving a ragged gutter. auto-fit (not
+   auto-fill) collapses tracks nothing landed in, so a short final row
+   stretches to the full width rather than trailing empty columns. */
 
 .symbol-picker {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
   gap: 8px;
 }
 
@@ -280,7 +290,6 @@ button:disabled {
   align-items: center;
   gap: 4px;
   padding: 8px;
-  width: 76px;
   background: var(--field);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
@@ -289,6 +298,37 @@ button:disabled {
   font-size: 12px;
   font-weight: 400;
   transition: border-color 0.1s, color 0.1s;
+}
+
+.symbol-item svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* Line-2 screw profiles: captions dropped and artwork rotated upright, so all
+   ten fit one row in the half-width column beside the preview. The tile is a
+   fixed narrow box and the (still wide) SVG is centred and rotated inside it,
+   which avoids having to reconcile the rotated size with the layout box. */
+
+.symbol-picker-compact {
+  grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+  gap: 4px;
+}
+
+.symbol-picker-compact .symbol-item {
+  height: 64px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.symbol-picker-compact .symbol-item svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58px;
+  height: 28px;
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .symbol-item:hover:not(.selected) {

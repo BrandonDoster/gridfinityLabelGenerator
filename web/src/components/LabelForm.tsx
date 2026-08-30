@@ -1,11 +1,57 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { ExportFormat, LabelInput } from "../types/label";
-import { getIcon, iconsByKind } from "../assets/icons";
+import { getIcon, iconsByKind, type Icon } from "../assets/icons";
 
 // Both pickers are derived from the icon manifest (web/src/assets/icons/).
 // Adding an icon there makes it appear here automatically.
 const CLIPARTS = iconsByKind("symbol");
 const LINE2_IMAGES = iconsByKind("line2");
+
+// The source SVGs are drawn on an A4 canvas; the icon's viewBox crops to the
+// drawing. Both pickers render that same way, so it lives in one place.
+const A4_W = "793.70079";
+const A4_H = "1122.5197";
+
+/**
+ * One picker tile.
+ *
+ * `compact` drops the caption and lets CSS rotate the artwork upright, which
+ * is how the ten line-2 screw profiles fit beside the preview instead of
+ * eating a full-width row. The name survives as the tooltip / accessible name.
+ */
+function IconTile({
+  icon,
+  selected,
+  compact,
+  onClick,
+}: {
+  icon: Icon;
+  selected: boolean;
+  compact?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`symbol-item${selected ? " selected" : ""}`}
+      onClick={onClick}
+      title={icon.label}
+      aria-label={icon.label}
+      aria-pressed={selected}
+    >
+      <svg viewBox={icon.viewBox} preserveAspectRatio="xMidYMid meet" style={{ filter: "invert(1)" }}>
+        <image
+          href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(icon.svg)}`}
+          x="0"
+          y="0"
+          width={A4_W}
+          height={A4_H}
+        />
+      </svg>
+      {compact ? null : <span>{icon.label}</span>}
+    </button>
+  );
+}
 
 interface LabelFormProps {
   onGenerate: (input: LabelInput, format: ExportFormat) => Promise<void>;
@@ -88,79 +134,68 @@ export function LabelForm({
         <h2>Design</h2>
         {outputControls}
       </div>
-      <div className="line1-row">
-        <div className="field">
-          <div className="field-label-row">
-            <span>Line 1</span>
-            {line1Controls}
+      {/* Both text lines stack in the left column, preview on the right. The
+          line-2 picker is compact enough to live here rather than below. */}
+      <div className="design-top">
+        <div className="design-fields">
+          <div className="field">
+            <div className="field-label-row">
+              <span>Line 1</span>
+              {line1Controls}
+            </div>
+            <input value={line1} onChange={(e) => setLine1(e.target.value)} />
           </div>
-          <input value={line1} onChange={(e) => setLine1(e.target.value)} />
+
+          <div className="field">
+            <div className="field-label-row">
+              <span>Line 2</span>
+              <div className="mode-toggle">
+                <button
+                  type="button"
+                  className={line2Mode === "image" ? "active" : ""}
+                  onClick={() => setLine2Mode("image")}
+                >
+                  Image
+                </button>
+                <button
+                  type="button"
+                  className={line2Mode === "text" ? "active" : ""}
+                  onClick={() => setLine2Mode("text")}
+                >
+                  Text
+                </button>
+                <button
+                  type="button"
+                  className={line2Mode === "off" ? "active" : ""}
+                  onClick={() => setLine2Mode("off")}
+                >
+                  Off
+                </button>
+              </div>
+              {line2Controls}
+            </div>
+            {line2Mode === "off" ? null : line2Mode === "text" ? (
+              <input value={line2} onChange={(e) => setLine2(e.target.value)} />
+            ) : (
+              <div className="symbol-picker symbol-picker-compact">
+                {LINE2_IMAGES.map((img) => (
+                  <IconTile
+                    key={img.id}
+                    icon={img}
+                    compact
+                    selected={selectedLine2Image === img.id}
+                    onClick={() =>
+                      setSelectedLine2Image((prev) => (prev === img.id ? null : img.id))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         {preview}
       </div>
-      <div className="field">
-        <div className="field-label-row">
-          <span>Line 2</span>
-          {line2Controls}
-          <div className="mode-toggle">
-            <button
-              type="button"
-              className={line2Mode === "image" ? "active" : ""}
-              onClick={() => setLine2Mode("image")}
-            >
-              Image
-            </button>
-            <button
-              type="button"
-              className={line2Mode === "text" ? "active" : ""}
-              onClick={() => setLine2Mode("text")}
-            >
-              Text
-            </button>
-            <button
-              type="button"
-              className={line2Mode === "off" ? "active" : ""}
-              onClick={() => setLine2Mode("off")}
-            >
-              Off
-            </button>
-          </div>
-        </div>
-        {line2Mode === "off" ? null : line2Mode === "text" ? (
-          <input value={line2} onChange={(e) => setLine2(e.target.value)} />
-        ) : (
-          <div className="symbol-picker">
-            {LINE2_IMAGES.map((img) => (
-              <button
-                key={img.id}
-                type="button"
-                className={`symbol-item${selectedLine2Image === img.id ? " selected" : ""}`}
-                onClick={() =>
-                  setSelectedLine2Image((prev) => (prev === img.id ? null : img.id))
-                }
-                title={img.label}
-              >
-                <svg
-                  viewBox={img.viewBox}
-                  width="40"
-                  height="40"
-                  preserveAspectRatio="xMidYMid meet"
-                  style={{ filter: "invert(1)" }}
-                >
-                  <image
-                    href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(img.svg)}`}
-                    x="0"
-                    y="0"
-                    width="793.70079"
-                    height="1122.5197"
-                  />
-                </svg>
-                <span>{img.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+
       <div className="field">
         <div className="field-label-row">
           <span>Symbol</span>
@@ -168,30 +203,12 @@ export function LabelForm({
         </div>
         <div className="symbol-picker">
           {CLIPARTS.map((c) => (
-            <button
+            <IconTile
               key={c.id}
-              type="button"
-              className={`symbol-item${selectedClipart === c.id ? " selected" : ""}`}
+              icon={c}
+              selected={selectedClipart === c.id}
               onClick={() => setSelectedClipart((prev) => (prev === c.id ? null : c.id))}
-              title={c.label}
-            >
-              <svg
-                viewBox={c.viewBox}
-                width="40"
-                height="40"
-                preserveAspectRatio="xMidYMid meet"
-                style={{ filter: "invert(1)" }}
-              >
-                <image
-                  href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(c.svg)}`}
-                  x="0"
-                  y="0"
-                  width="793.70079"
-                  height="1122.5197"
-                />
-              </svg>
-              <span>{c.label}</span>
-            </button>
+            />
           ))}
         </div>
       </div>
