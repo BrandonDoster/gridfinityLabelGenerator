@@ -5,4 +5,4 @@ server/dist/
 web/dist/
 web/tsconfig.tsbuildinfo
 archive/
-newassets/
+newassets/.DS_Store

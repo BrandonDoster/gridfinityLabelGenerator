@@ -1,3 +1,7 @@
+import type { Placements } from "../services/placement";
+
+export type { Placements };
+
 export interface LabelInput {
   id?: string;
   title: string;
@@ -5,12 +9,12 @@ export interface LabelInput {
   line2: string;
   iconSvg: string;
   iconViewBox?: string;  // viewBox crop for iconSvg (A4-canvas SVGs need cropping)
-  iconText?: string;
   line2Svg?: string;    // SVG to render in the line-2 box instead of text
   line2ViewBox?: string; // viewBox crop for line2Svg (A4-canvas SVGs need cropping)
   labelWidth?: 1 | 2 | 3; // number of gridfinity units wide (37.8 + (n-1)*42 mm)
   baseProfileId?: BaseStlProfileId; // which base STL design to render onto (default "pred")
   embossMode?: EmbossMode; // raised vs flush — flush requires profile.supportsFlush
+  placement?: Placements; // per-element nudge/scale on the profile's default boxes (default: no change)
 }
 
 /**
@@ -23,15 +27,8 @@ export interface LabelInput {
  */
 export type EmbossMode = "raised" | "flush";
 
-export type LabelCategory = "fasteners" | "inserts";
-
-export interface PredefinedLabel extends LabelInput {
-  /** Icon id from the icon manifest (web/src/assets/icons/). */
-  icon: string;
-  category: LabelCategory;
-  size: string;
-  wrenchSize?: string;
-}
+/** What a Download button produces. Chosen per click, not as a global mode. */
+export type ExportFormat = "3mf" | "png";
 
 // ---------------------------------------------------------------------------
 // Base-STL profile system.

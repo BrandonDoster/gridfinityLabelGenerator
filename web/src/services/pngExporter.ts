@@ -1,4 +1,6 @@
 import type { LabelInput } from "../types/label";
+import { DEFAULT_PLACEMENTS, adjustBox } from "./placement";
+import { centerBox, hasLine2 } from "./layout";
 
 // Rasterizes the label face to a print-ready PNG: black "ink" content on a
 // transparent background, at the label's true physical size. Intended for label
@@ -9,7 +11,6 @@ const DPI = 300;
 const PX_PER_MM = DPI / 25.4; // ≈ 11.81 px/mm
 const INK = "#000000";
 const FONT = "Arial, 'Helvetica Neue', Helvetica, sans-serif";
-const ICON_GAP = 0.4; // mm between the two halves of an icon-text label (e.g. TX10)
 const SCREW_SVG_VIEWBOX = "32.4 18.7 80.2 16"; // fallback crop for a line-2 SVG without its own
 const A4_W = 793.70079; // source-SVG canvas the icon assets are drawn on
 const A4_H = 1122.5197;
@@ -57,23 +58,8 @@ function imageEl(svg: string, viewBox: string, box: Box): string {
 }
 
 function iconEls(label: LabelInput, box: Box): string {
-  if (label.iconText) {
-    // Split e.g. "TX10" → ["TX", "10"] so each half fills its own row.
-    const m = label.iconText.match(/^([A-Za-z]+)(\d+.*)$/);
-    const parts = m ? [m[1], m[2]] : [label.iconText];
-    const partH = (box.h - (parts.length > 1 ? ICON_GAP : 0)) / parts.length;
-    return parts
-      .map((part, i) => {
-        const partBox: Box = { x: box.x, y: box.y + i * (partH + ICON_GAP), w: box.w, h: partH };
-        const fs = Math.min((box.w * 1.7) / (part.length || 1), partH);
-        return textEl(part, partBox, fs);
-      })
-      .join("");
-  }
-  if (label.iconSvg) {
-    return imageEl(label.iconSvg, label.iconViewBox ?? `0 0 ${A4_W} ${A4_H}`, box);
-  }
-  return "";
+  if (!label.iconSvg) return "";
+  return imageEl(label.iconSvg, label.iconViewBox ?? `0 0 ${A4_W} ${A4_H}`, box);
 }
 
 /** Build the standalone, print-ready SVG for a label face, plus its pixel size. */
@@ -81,11 +67,18 @@ export function buildLabelFaceSvg(label: LabelInput): { svg: string; pxW: number
   const pxW = Math.round(FACE.width * PX_PER_MM);
   const pxH = Math.round(FACE.height * PX_PER_MM);
 
+  const placement = label.placement ?? DEFAULT_PLACEMENTS;
+  // Line 2 off → line 1 sits midway between the two slots (services/layout.ts),
+  // measured against the default line-2 slot rather than the nudged one.
+  const line1Base = hasLine2(label) ? LINE1_BOX : centerBox(LINE1_BOX, LINE2_BOX);
+  const line1 = adjustBox(line1Base, placement.line1);
+  const line2 = adjustBox(LINE2_BOX, placement.line2);
+
   const body: string[] = [];
-  body.push(iconEls(label, ICON_BOX));
-  if (label.line1) body.push(textEl(label.line1, LINE1_BOX, fittingFontSize(label.line1, LINE1_BOX.w, LINE1_BOX.h)));
-  if (label.line2Svg) body.push(imageEl(label.line2Svg, label.line2ViewBox ?? SCREW_SVG_VIEWBOX, LINE2_BOX));
-  else if (label.line2) body.push(textEl(label.line2, LINE2_BOX, fittingFontSize(label.line2, LINE2_BOX.w, LINE2_BOX.h)));
+  body.push(iconEls(label, adjustBox(ICON_BOX, placement.icon)));
+  if (label.line1) body.push(textEl(label.line1, line1, fittingFontSize(label.line1, line1.w, line1.h)));
+  if (label.line2Svg) body.push(imageEl(label.line2Svg, label.line2ViewBox ?? SCREW_SVG_VIEWBOX, line2));
+  else if (label.line2) body.push(textEl(label.line2, line2, fittingFontSize(label.line2, line2.w, line2.h)));
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${pxW}" height="${pxH}" viewBox="0 0 ${FACE.width} ${FACE.height}">` +

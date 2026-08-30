@@ -13,5 +13,7 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Node-only self-check script (run with `npm run check`), not part of the bundle.
+  "exclude": ["src/**/*.check.ts"]
 }

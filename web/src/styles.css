@@ -66,45 +66,43 @@ header {
   object-fit: cover;
 }
 
-.settings-bar {
+/* Panel heading row: title on the left, its settings on the right */
+.panel-header {
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  font-size: 14px;
 }
 
-.settings-group {
+.panel-header h2 {
+  margin: 0;
+}
+
+.header-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.settings-label {
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.preview-panel {
-  margin-bottom: 16px;
+/* Line 1 field on the left, live preview on the right */
+.line1-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   align-items: center;
 }
 
 .preview-svg {
   width: 100%;
-  max-width: 540px;
   height: auto;
   display: block;
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
@@ -119,8 +117,8 @@ header {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.panel:not(.preview-panel):focus-within,
-.panel:not(.preview-panel).panel-active {
+.panel:focus-within,
+.panel.panel-active {
   background: #1a2f4a;
   border-color: #3b6090;
 }
@@ -294,19 +292,25 @@ button:disabled {
   color: #fca5a5;
 }
 
-/* Line 2 field (label row + mode toggle + input/picker) */
+/* Form field: label row (name + its placement/mode controls) over the input */
 
-.line2-field {
+.field {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 14px;
 }
 
-.line2-label-row {
+.field-label-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Everything after the field name is pushed right. */
+.field-label-row > :first-child {
+  margin-right: auto;
 }
 
 .mode-toggle {
@@ -354,13 +358,6 @@ button:disabled {
 
 /* Symbol picker */
 
-.symbol-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-}
-
 .symbol-picker {
   display: flex;
   flex-wrap: wrap;
@@ -402,8 +399,117 @@ button:disabled {
   color: #e2e8f0;
 }
 
+/* Fastener size grid */
+
+.size-grid-scroll {
+  overflow-x: auto;
+}
+
+.size-grid {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.size-grid th,
+.size-grid td {
+  padding: 2px 4px;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Row/column headings act as toggle-the-whole-group buttons, so they opt out
+   of the page's green submit-button styling. */
+.size-grid th button {
+  all: unset;
+  display: block;
+  padding: 3px 6px;
+  min-width: 24px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.size-grid th button:hover {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.size-grid input {
+  margin: 0;
+  cursor: pointer;
+}
+
 @media (max-width: 800px) {
-  .layout {
+  .line1-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Two download buttons side by side (3MF / PNG) */
+
+.download-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.download-row button {
+  margin-top: 0;
+}
+
+/* Per-element placement nudge, shown on that element's own field row.
+   Sized to fit the Line 1 column, which is only half the panel wide. */
+
+.placement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.placement-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.placement label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.placement input {
+  width: 50px;
+  margin: 0;
+  padding: 3px 6px;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.placement button {
+  margin: 0;
+  padding: 3px 10px;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.placement button:hover:not(:disabled) {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.placement button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

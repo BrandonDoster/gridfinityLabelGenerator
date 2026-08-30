@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { LabelForm } from "./components/LabelForm";
 import { LabelPreview } from "./components/LabelPreview";
-import { PredefinedSelector } from "./components/PredefinedSelector";
-import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng, fetchPredefined } from "./services/api";
+import { SizeGrid } from "./components/SizeGrid";
+import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng } from "./services/api";
 import { saveBlob } from "./services/download";
 import { getProfile, listProfiles } from "./services/profiles";
-import type { BaseStlProfileId, EmbossMode, LabelInput, PredefinedLabel } from "./types/label";
+import {
+  DEFAULT_PLACEMENT,
+  DEFAULT_PLACEMENTS,
+  isDefault,
+  type Placement,
+  type Placements,
+} from "./services/placement";
+import type { BaseStlProfileId, EmbossMode, ExportFormat, LabelInput } from "./types/label";
 
 function slugifyTitle(value: string): string {
   return value
@@ -27,55 +34,47 @@ function buildBatchZipFileName(typeToken: string, date = new Date()): string {
 }
 
 export function App() {
-  const [labels, setLabels] = useState<PredefinedLabel[]>([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
   const [previewLabel, setPreviewLabel] = useState<LabelInput | null>(null);
-  const [activePanel, setActivePanel] = useState<"custom" | "predefined">("custom");
   const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>("pred");
   const [embossMode, setEmbossMode] = useState<EmbossMode>("raised");
-  const [exportFormat, setExportFormat] = useState<"3mf" | "png">("3mf");
+  const [placement, setPlacement] = useState<Placements>(DEFAULT_PLACEMENTS);
   const profiles = listProfiles();
   const activeProfile = getProfile(baseProfileId);
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        setLabels(await fetchPredefined());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load predefined labels");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    run();
-  }, []);
-
   // Output type for filenames: "pred" / "cullenect" for 3MF, "png" for images —
   // so exporting the same label as different types doesn't collide on download.
-  const typeToken = exportFormat === "png" ? "png" : baseProfileId;
-  const ext = exportFormat === "png" ? "png" : "3mf";
+  // Doubles as the file extension for PNG.
+  const tokenFor = (format: ExportFormat) => (format === "png" ? "png" : baseProfileId);
 
-  const handleCustom = async (input: LabelInput) => {
+  // A failed export is otherwise silent — the child only resets its spinner.
+  const reportErrors = async (run: () => Promise<void>) => {
     setError("");
-    const tagged = { ...input, baseProfileId, embossMode };
-    const blob = exportFormat === "png" ? await downloadSinglePng(tagged) : await downloadSingle(tagged);
-    saveBlob(blob, `${slugifyTitle(input.title)}-${typeToken}.${ext}`);
-  };
-
-  const handleBatch = async (selected: PredefinedLabel[]) => {
-    setError("");
-    const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode }));
-    const result = exportFormat === "png" ? await downloadBatchPng(tagged) : await downloadBatch(tagged);
-    if (result.isZip) {
-      saveBlob(result.blob, buildBatchZipFileName(typeToken));
-      return;
+    try {
+      await run();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
     }
-
-    const single = selected[0];
-    saveBlob(result.blob, `${slugifyTitle(single.title)}-${typeToken}.${ext}`);
   };
+
+  const handleCustom = (input: LabelInput, format: ExportFormat) =>
+    reportErrors(async () => {
+      const tagged = { ...input, baseProfileId, embossMode, placement };
+      const blob = format === "png" ? await downloadSinglePng(tagged) : await downloadSingle(tagged);
+      saveBlob(blob, `${slugifyTitle(input.title)}-${tokenFor(format)}.${format}`);
+    });
+
+  const handleBatch = (selected: LabelInput[], format: ExportFormat) =>
+    reportErrors(async () => {
+      const tagged = selected.map((l) => ({ ...l, baseProfileId, embossMode, placement }));
+      const result = format === "png" ? await downloadBatchPng(tagged) : await downloadBatch(tagged);
+      if (result.isZip) {
+        saveBlob(result.blob, buildBatchZipFileName(tokenFor(format)));
+        return;
+      }
+
+      saveBlob(result.blob, `${slugifyTitle(selected[0].title)}-${tokenFor(format)}.${format}`);
+    });
 
   // When the base STL changes, re-emit the current preview label so the
   // <LabelPreview> re-renders against the new profile layout. Also auto-reset
@@ -96,6 +95,19 @@ export function App() {
     if (previewLabel) setPreviewLabel({ ...previewLabel, embossMode: mode });
   };
 
+  // Same pattern as emboss mode: update the setting and patch the live preview
+  // so the element moves as you type, without waiting for a child re-emit.
+  const applyPlacement = (next: Placements) => {
+    setPlacement(next);
+    if (previewLabel) setPreviewLabel({ ...previewLabel, placement: next });
+  };
+
+  const handlePlacementChange = (part: keyof Placements, key: keyof Placement, raw: string) => {
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return;
+    applyPlacement({ ...placement, [part]: { ...placement[part], [key]: value } });
+  };
+
   // Wrap setPreviewLabel so child-emitted previews always carry the active
   // base profile id + emboss mode, even though the children don't know about them.
   // Memoized so its identity is stable across re-renders: the child preview
@@ -103,10 +115,96 @@ export function App() {
   // make every emitted preview re-trigger the effect → infinite update loop.
   const handlePreviewChange = useCallback(
     (label: LabelInput) => {
-      setPreviewLabel({ ...label, baseProfileId, embossMode });
+      setPreviewLabel({ ...label, baseProfileId, embossMode, placement });
     },
-    [baseProfileId, embossMode],
+    [baseProfileId, embossMode, placement],
   );
+
+  // Base-STL choice, plus emboss mode where the profile offers it. PNG is not
+  // here: it's a download button, since it's an output of the same design.
+  // Rendered here (App owns the state) but placed by <LabelForm>.
+  const outputControls = (
+    <div className="header-controls">
+      <div className="mode-toggle">
+        {profiles.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={baseProfileId === p.id ? "active" : ""}
+            onClick={() => handleBaseChange(p.id)}
+          >
+            {p.displayName}
+          </button>
+        ))}
+      </div>
+
+      {activeProfile.supportsFlush && (
+        <div className="mode-toggle">
+          <button
+            type="button"
+            className={embossMode === "raised" ? "active" : ""}
+            onClick={() => handleEmbossModeChange("raised")}
+          >
+            Raised
+          </button>
+          <button
+            type="button"
+            className={embossMode === "flush" ? "active" : ""}
+            onClick={() => handleEmbossModeChange("flush")}
+          >
+            Flush
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  // Nudge/scale for one element, rendered on that element's own row so it's
+  // obvious what it moves. Same control for the icon and both text lines.
+  const placementControls = (part: keyof Placements) => {
+    const p = placement[part];
+    return (
+      <div className="placement">
+        <span className="placement-label">mm</span>
+        <label>
+          X
+          <input
+            type="number"
+            step={0.25}
+            value={p.dx}
+            onChange={(e) => handlePlacementChange(part, "dx", e.target.value)}
+          />
+        </label>
+        <label>
+          Y
+          <input
+            type="number"
+            step={0.25}
+            value={p.dy}
+            onChange={(e) => handlePlacementChange(part, "dy", e.target.value)}
+          />
+        </label>
+        <label>
+          Size
+          <input
+            type="number"
+            step={0.05}
+            min={0.1}
+            value={p.scale}
+            onChange={(e) => handlePlacementChange(part, "scale", e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          title="Reset to the profile default"
+          onClick={() => applyPlacement({ ...placement, [part]: DEFAULT_PLACEMENT })}
+          disabled={isDefault(p)}
+        >
+          Reset
+        </button>
+      </div>
+    );
+  };
 
   return (
     <main className="app">
@@ -127,66 +225,19 @@ export function App() {
         </p>
       </div>
 
-      {loading ? <p>Loading predefined labels...</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
-      <section className="panel preview-panel">
-        <LabelPreview label={previewLabel} />
-      </section>
-
-      <div className="settings-bar">
-        <div className="settings-group">
-          <span className="settings-label">Output</span>
-          <div className="mode-toggle">
-            {profiles.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={exportFormat === "3mf" && baseProfileId === p.id ? "active" : ""}
-                onClick={() => {
-                  setExportFormat("3mf");
-                  handleBaseChange(p.id);
-                }}
-              >
-                {p.displayName}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={exportFormat === "png" ? "active" : ""}
-              onClick={() => setExportFormat("png")}
-            >
-              PNG
-            </button>
-          </div>
-        </div>
-
-        {activeProfile.supportsFlush && exportFormat !== "png" && (
-          <div className="settings-group">
-            <span className="settings-label">Emboss Mode</span>
-            <div className="mode-toggle">
-              <button
-                type="button"
-                className={embossMode === "raised" ? "active" : ""}
-                onClick={() => handleEmbossModeChange("raised")}
-              >
-                Raised
-              </button>
-              <button
-                type="button"
-                className={embossMode === "flush" ? "active" : ""}
-                onClick={() => handleEmbossModeChange("flush")}
-              >
-                Flush
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
       <div className="layout">
-        <LabelForm onGenerate={handleCustom} onPreviewChange={handlePreviewChange} isActive={activePanel === "custom"} onActivate={() => setActivePanel("custom")} exportFormat={exportFormat} />
-        <PredefinedSelector labels={labels} onGenerate={handleBatch} onPreviewChange={handlePreviewChange} isActive={activePanel === "predefined"} onActivate={() => setActivePanel("predefined")} exportFormat={exportFormat} />
+        <LabelForm
+          onGenerate={handleCustom}
+          onPreviewChange={handlePreviewChange}
+          outputControls={outputControls}
+          line1Controls={placementControls("line1")}
+          line2Controls={placementControls("line2")}
+          iconControls={placementControls("icon")}
+          preview={<LabelPreview label={previewLabel} />}
+        />
+        <SizeGrid template={previewLabel} onGenerate={handleBatch} />
       </div>
     </main>
   );
