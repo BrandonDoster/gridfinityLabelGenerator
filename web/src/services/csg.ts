@@ -7,8 +7,12 @@ import type { ManifoldToplevel } from "manifold-3d";
 //
 // Both dynamic imports below (the JS module and the wasm `?url`) tell Vite
 // to code-split everything reachable from here into a separate chunk. The
-// chunk doesn't fetch until subtract() is actually called. See
-// fork_decisions.md §D-001, D-007, D-021.
+// chunk doesn't fetch until subtract() is actually called.
+//
+// Flush mode carves real geometry here rather than emitting a Bambu
+// `negative_part` in the 3MF: a carved mesh is plain geometry that every
+// slicer understands, while negative_part only works in Bambu Studio and
+// OrcaSlicer.
 
 let runtimePromise: Promise<ManifoldToplevel> | null = null;
 

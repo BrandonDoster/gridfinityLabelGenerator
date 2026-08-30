@@ -48,8 +48,9 @@ const profileCache = new Map<BaseStlProfileId, Promise<LoadedProfile>>();
 let fontPromise: Promise<Font> | null = null;
 
 // Per-call state. Set at the start of buildLabelMeshes; helper functions read
-// these. Not concurrent-safe — see fork_plan.md gotchas. Acceptable for the
-// existing single-call-at-a-time UX.
+// these. Not concurrent-safe: two overlapping buildLabelMeshes calls would
+// clobber each other's state. Acceptable because every caller awaits one label
+// before starting the next, including the batch export in services/api.ts.
 let activeProfile: BaseStlProfile = PRED_PROFILE;
 let activeLoaded: LoadedProfile | null = null;
 let activeFont: Font | null = null;
@@ -450,8 +451,7 @@ export async function buildLabelMeshes(label: LabelInput): Promise<LabelMeshes> 
 // vertices. When that lands in a 3MF, slicers (Orca in particular) treat it
 // as a soup of disconnected triangles — every edge is reported non-manifold.
 // mergeVertices walks the position array, hashes each vertex to the tolerance,
-// and emits indexed output where coincident vertices are shared. See
-// fork_decisions.md §D-014.
+// and emits indexed output where coincident vertices are shared.
 function bakePositionOnly(mesh: Mesh): BufferGeometry {
   mesh.updateMatrixWorld(true);
   const src = mesh.geometry as BufferGeometry;
