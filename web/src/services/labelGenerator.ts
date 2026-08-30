@@ -20,6 +20,8 @@ import type {
   LabelInput,
 } from "../types/label";
 import { PRED_PROFILE, getProfile } from "./profiles";
+import { DEFAULT_PLACEMENTS, adjustRect, type Placements } from "./placement";
+import { centerRect, hasLine2 } from "./layout";
 
 // Tighter letter spacing: each glyph's horizontal advance is reduced by this
 // factor. Glyphs themselves are unchanged (no squishing), only the gaps between
@@ -52,6 +54,7 @@ let activeProfile: BaseStlProfile = PRED_PROFILE;
 let activeLoaded: LoadedProfile | null = null;
 let activeFont: Font | null = null;
 let activeMode: EmbossMode = "raised";
+let activePlacement: Placements = DEFAULT_PLACEMENTS;
 let contentXOffset = 0; // shifts content right to centre it on wider labels
 
 async function loadFont(): Promise<Font> {
@@ -264,35 +267,13 @@ function buildSvgMeshInBox(svgString: string, box: Rect): Mesh | null {
   return extruded;
 }
 
-function buildIconMesh(iconSvg: string): Mesh | null {
-  return buildSvgMeshInBox(iconSvg, activeProfile.iconBox);
+/** The active profile's icon box with the label's placement nudge applied. */
+function iconRect(): Rect {
+  return adjustRect(activeProfile.iconBox, activePlacement.icon);
 }
 
-function buildIconTextMeshes(text: string): Mesh[] {
-  const target = toWorldBox(activeProfile.iconBox);
-  const targetSize = getBoxSize(target);
-
-  // Split e.g. "TX10" → ["TX", "10"] so each part fills its own half and renders larger
-  const match = text.match(/^([A-Za-z]+)(\d+.*)$/);
-  if (match) {
-    const [, prefix, number] = match;
-    const GAP = 1.0; // mm gap between the two lines
-    const halfHeight = (targetSize.height - GAP) / 2;
-    const botY = target.y1;
-    const topY = target.y1 + halfHeight + GAP;
-
-    const topSize = chooseTextSizeForBox(prefix, targetSize.width, halfHeight);
-    const topMesh = createTextLineMesh(prefix, topSize, target.x1, topY, targetSize.width, halfHeight);
-
-    const botSize = chooseTextSizeForBox(number, targetSize.width, halfHeight);
-    const botMesh = createTextLineMesh(number, botSize, target.x1, botY, targetSize.width, halfHeight);
-
-    return [topMesh, botMesh].filter(Boolean) as Mesh[];
-  }
-
-  const size = chooseTextSizeForBox(text, targetSize.width, targetSize.height);
-  const mesh = createTextLineMesh(text, size, target.x1, target.y1, targetSize.width, targetSize.height);
-  return mesh ? [mesh] : [];
+function buildIconMesh(iconSvg: string): Mesh | null {
+  return buildSvgMeshInBox(iconSvg, iconRect());
 }
 
 function chooseTextSizeForBox(text: string, maxWidth: number, maxHeight: number): number {
@@ -348,8 +329,16 @@ function createTextLineMesh(
 }
 
 function buildTextMeshes(label: LabelInput): Mesh[] {
-  const topBox = toWorldBox(activeProfile.line1Box);
-  const bottomBox = toWorldBox(activeProfile.line2Box);
+  // With line 2 off, line 1 drops to the middle of the content area instead of
+  // staying in the top slot. Same box size, so the fitted font size is unchanged.
+  // Centring is measured against the profile's default line-2 slot, not the
+  // nudged one — line 2's nudge is irrelevant when line 2 isn't rendered.
+  const line1Rect = hasLine2(label)
+    ? activeProfile.line1Box
+    : centerRect(activeProfile.line1Box, activeProfile.line2Box);
+  const topBox = toWorldBox(adjustRect(line1Rect, activePlacement.line1));
+  const line2Rect = adjustRect(activeProfile.line2Box, activePlacement.line2);
+  const bottomBox = toWorldBox(line2Rect);
   const topSize = getBoxSize(topBox);
   const bottomSize = getBoxSize(bottomBox);
 
@@ -360,7 +349,7 @@ function buildTextMeshes(label: LabelInput): Mesh[] {
   if (line1Mesh) meshes.push(line1Mesh);
 
   if (label.line2Svg) {
-    const line2Mesh = buildSvgMeshInBox(label.line2Svg, activeProfile.line2Box);
+    const line2Mesh = buildSvgMeshInBox(label.line2Svg, line2Rect);
     if (line2Mesh) meshes.push(line2Mesh);
   } else {
     const bottomFontSize = chooseTextSizeForBox(label.line2, bottomSize.width, bottomSize.height);
@@ -401,6 +390,7 @@ export async function buildLabelMeshes(label: LabelInput): Promise<LabelMeshes> 
   activeLoaded = loaded;
   activeFont = font;
   activeMode = mode;
+  activePlacement = label.placement ?? DEFAULT_PLACEMENTS;
 
   const width = label.labelWidth ?? 1;
   const widening = profile.widening;
@@ -411,12 +401,8 @@ export async function buildLabelMeshes(label: LabelInput): Promise<LabelMeshes> 
   if (extraWidth > 0) widenGeometry(baseMesh.geometry, extraWidth);
 
   const inlayMeshes: Mesh[] = [];
-  if (label.iconText) {
-    inlayMeshes.push(...buildIconTextMeshes(label.iconText));
-  } else {
-    const iconMesh = buildIconMesh(label.iconSvg);
-    if (iconMesh) inlayMeshes.push(iconMesh);
-  }
+  const iconMesh = buildIconMesh(label.iconSvg);
+  if (iconMesh) inlayMeshes.push(iconMesh);
   inlayMeshes.push(...buildTextMeshes(label));
 
   let baseGeometry = bakePositionOnly(baseMesh);

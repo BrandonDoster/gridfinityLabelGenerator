@@ -1,3 +1,37 @@
+/* ---------------------------------------------------------------------------
+   Theme: "Rust" — neutral near-black chrome, monospace caps headings, sharp
+   corners, one warm accent. Colour lives on controls; panels and borders stay
+   hueless so nothing reads as tinted. Retheming means editing :root only.
+   --------------------------------------------------------------------------- */
+:root {
+  --bg: #0c0c0e;
+  --panel: #161619;          /* secondary panels */
+  --panel-primary: #1e1f24;  /* the Design panel — permanently one step brighter */
+  --border: #2b2c31;
+  --border-primary: #4a4c53;
+  --field: #0a0a0c;
+
+  --text: #e9e9ec;
+  --muted: #9a9ba2;
+  --dim: #6c6d75;
+  --danger: #f08a7a;
+
+  --accent: #c4553a;
+  --accent-ink: #1b0703;     /* text on a filled accent surface */
+  --accent-soft: #3d1d12;    /* selected toggle background */
+  --accent-soft-ink: #e59b81;
+
+  /* Label face in the 2D preview (services/profiles.tsx, LabelPreview.tsx) */
+  --label-body: #1d1e23;
+  --label-edge: #4e5057;
+  --label-face: #0a0a0c;
+  --label-ink: #e9e9ec;
+
+  --radius: 2px;
+  --radius-sm: 2px;
+  --head-font: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
 * {
   box-sizing: border-box;
   font-family: Inter, system-ui, sans-serif;
@@ -5,124 +39,135 @@
 
 body {
   margin: 0;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--bg);
+  color: var(--text);
 }
 
+/* Wide enough that all 14 symbol tiles fit one row — see .symbol-picker. */
 .app {
-  max-width: 1100px;
+  max-width: 1260px;
   margin: 0 auto;
   padding: 24px;
+}
+
+h1,
+h2 {
+  font-family: var(--head-font);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin: 0;
 }
 
 header {
   margin-bottom: 20px;
 }
 
-.info-box {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  font-size: 0.875rem;
-  color: #94a3b8;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.tagline {
+  margin: 3px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
-.info-box p {
+.tagline strong {
+  color: var(--text);
+}
+
+.site-footer {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.site-footer p {
   margin: 0;
   line-height: 1.5;
 }
 
-.info-box strong {
-  color: #e2e8f0;
-}
-
-.info-box a {
-  color: #38bdf8;
+.tagline a,
+.site-footer a {
+  color: var(--accent-soft-ink);
   text-decoration: none;
 }
 
-.info-box a:hover {
+.tagline a:hover,
+.site-footer a:hover {
   text-decoration: underline;
 }
 
-.info-beta {
-  color: #fbbf24;
-}
-
-.info-beta strong {
-  color: #fbbf24;
-}
-
-.header-banner {
-  display: block;
-  width: 100%;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  object-fit: cover;
-}
-
-.settings-bar {
+/* Panel heading row: title on the left, its settings on the right */
+.panel-header {
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  font-size: 14px;
 }
 
-.settings-group {
+.header-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.settings-label {
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.preview-panel {
-  margin-bottom: 16px;
+/* Both text lines on the left, live preview on the right */
+.design-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   align-items: center;
+}
+
+.design-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 800px) {
+  .design-top {
+    grid-template-columns: 1fr;
+  }
 }
 
 .preview-svg {
   width: 100%;
-  max-width: 540px;
   height: auto;
   display: block;
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
 .panel {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.panel:not(.preview-panel):focus-within,
-.panel:not(.preview-panel).panel-active {
-  background: #1a2f4a;
-  border-color: #3b6090;
+/* The Design panel is where the work happens, so it sits a step brighter than
+   the panels below it. Static, not a focus state — the emphasis is about
+   hierarchy, not about which panel you last clicked. */
+.panel-primary {
+  background: var(--panel-primary);
+  border-color: var(--border-primary);
+}
+
+.panel-subtitle {
+  margin: -14px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 label {
@@ -133,196 +178,71 @@ label {
 }
 
 input {
-  border-radius: 6px;
-  border: 1px solid #475569;
-  background: #0f172a;
-  color: #e2e8f0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--field);
+  color: var(--text);
   padding: 8px;
 }
 
 button {
   margin-top: 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px;
-  background: #22c55e;
-  color: #052e16;
+  background: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
   cursor: pointer;
 }
 
 button:disabled {
-  background: #64748b;
-  color: #cbd5e1;
+  background: var(--dim);
+  color: var(--panel);
   cursor: not-allowed;
 }
 
-.list {
-  display: grid;
-  gap: 8px;
-  max-height: 280px;
-  overflow: auto;
-  padding-right: 6px;
-}
-
-.list-item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-.size-badge {
-  margin-left: auto;
-  font-size: 0.75rem;
-  opacity: 0.55;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Tree selector */
-
-.tree {
-  display: flex;
-  flex-direction: column;
-  max-height: 420px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.tree-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.tree-children {
-  display: flex;
-  flex-direction: column;
-}
-
-.tree-node {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 6px;
-  border-radius: 5px;
-  user-select: none;
-}
-
-.tree-node:hover {
-  background: #273549;
-}
-
-.tree-level-0 {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.tree-level-1 {
-  padding-left: 22px;
-  font-size: 14px;
-}
-
-.tree-level-2 {
-  padding-left: 44px;
-  font-size: 13px;
-}
-
-.tree-toggle {
-  margin-top: 0;
-  background: none;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0;
-  font-size: 9px;
-  width: 14px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  transition: transform 0.15s, color 0.1s;
-  flex-shrink: 0;
-}
-
-.tree-toggle:hover {
-  background: none;
-  color: #e2e8f0;
-}
-
-.tree-toggle.expanded {
-  transform: rotate(90deg);
-}
-
-.tree-label {
-  flex: 1;
-}
-
-.tree-count {
-  font-size: 11px;
-  opacity: 0.4;
-  font-variant-numeric: tabular-nums;
-}
-
-.store-link {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: rgba(226, 232, 240, 0.3);
-  text-underline-offset: 4px;
-}
-
-.store-link:hover {
-  text-decoration-color: rgba(226, 232, 240, 0.65);
-}
-
-.panel-subtitle {
-  margin: -14px 0 0;
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.options-heading {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.45;
-  margin-top: 10px;
-}
-
 .error {
-  color: #fca5a5;
+  color: var(--danger);
 }
 
-/* Line 2 field (label row + mode toggle + input/picker) */
+/* Form field: label row (name + its placement/mode controls) over the input */
 
-.line2-field {
+.field {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 14px;
 }
 
-.line2-label-row {
+.field-label-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
+
+/* Everything after the field name is pushed right. */
+.field-label-row > :first-child {
+  margin-right: auto;
+}
+
+/* Segmented toggle (output, line-2 mode, label width) */
 
 .mode-toggle {
   display: flex;
-  border: 2px solid #334155;
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .mode-toggle button {
   margin: 0;
   padding: 3px 10px;
-  background: #0f172a;
+  background: var(--field);
   border: none;
   border-radius: 0;
-  color: #64748b;
+  color: var(--dim);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -330,17 +250,17 @@ button:disabled {
 }
 
 .mode-toggle button + button {
-  border-left: 2px solid #334155;
+  border-left: 2px solid var(--border);
 }
 
 .mode-toggle button:hover:not(.active) {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--panel);
+  color: var(--text);
 }
 
 .mode-toggle button.active {
-  background: #14532d;
-  color: #86efac;
+  background: var(--accent-soft);
+  color: var(--accent-soft-ink);
 }
 
 /* Label width selector */
@@ -352,19 +272,19 @@ button:disabled {
   font-size: 14px;
 }
 
-/* Symbol picker */
+/* Symbol picker.
+   A grid rather than wrapped flex: tracks divide the row exactly, so the
+   right edge is flush instead of leaving a ragged gutter. auto-fit (not
+   auto-fill) collapses tracks nothing landed in, so a short final row
+   stretches to the full width rather than trailing empty columns. */
 
-.symbol-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-}
-
+/* The 73px track floor is set by the widest unbreakable caption ("Robertson",
+   ~55px at 11px) plus padding and border. Together with the page's max-width
+   it yields exactly 14 columns, so every symbol sits on one row. */
 .symbol-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(73px, 1fr));
+  gap: 7px;
 }
 
 .symbol-item {
@@ -373,37 +293,166 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px;
-  width: 76px;
-  background: #0f172a;
-  border: 2px solid #334155;
-  border-radius: 8px;
+  padding: 7px;
+  background: var(--field);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  color: #94a3b8;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 400;
+  line-height: 1.25;
+  text-align: center;
   transition: border-color 0.1s, color 0.1s;
 }
 
-.symbol-item img {
+/* Last resort if a caption is wider than its track on some font stack:
+   break the word rather than spill out of the tile. */
+.symbol-item span {
+  overflow-wrap: anywhere;
+}
+
+.symbol-item svg {
   width: 40px;
   height: 40px;
-  object-fit: contain;
-  filter: invert(1);
+}
+
+/* Line-2 screw profiles: captions dropped and artwork rotated upright, so all
+   ten fit one row in the half-width column beside the preview. The tile is a
+   fixed narrow box and the (still wide) SVG is centred and rotated inside it,
+   which avoids having to reconcile the rotated size with the layout box. */
+
+.symbol-picker-compact {
+  grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+  gap: 4px;
+}
+
+.symbol-picker-compact .symbol-item {
+  height: 64px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.symbol-picker-compact .symbol-item svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58px;
+  height: 28px;
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .symbol-item:hover:not(.selected) {
-  border-color: #64748b;
-  color: #e2e8f0;
+  border-color: var(--dim);
+  color: var(--text);
 }
 
 .symbol-item.selected {
-  border-color: #22c55e;
-  color: #e2e8f0;
+  border-color: var(--accent);
+  color: var(--text);
 }
 
-@media (max-width: 800px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
+/* Two download buttons side by side (3MF / PNG) */
+
+.download-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.download-row button {
+  margin-top: 0;
+}
+
+/* Fastener size batch — one button per diameter, per format */
+
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.batch-label {
+  font-size: 14px;
+  color: var(--muted);
+  min-width: 128px;
+}
+
+.batch-row button {
+  margin-top: 0;
+  flex: 1;
+  min-width: 68px;
+}
+
+/* Per-element placement nudge, shown on that element's own field row.
+   Sized to fit the Line 1 column, which is only half the panel wide. */
+
+.placement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.placement-label {
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.placement label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Number spinners: Chromium only reveals them on hover, Firefox shows them
+   permanently, which eats half of a 50px field. Hidden in both — the field
+   still steps with the arrow keys and honours the `step` attribute. */
+.placement input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.placement input[type="number"]::-webkit-outer-spin-button,
+.placement input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.placement input {
+  width: 50px;
+  margin: 0;
+  padding: 3px 6px;
+  background: var(--field);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.placement button {
+  margin: 0;
+  padding: 3px 10px;
+  background: var(--field);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.placement button:hover:not(:disabled) {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.placement button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

@@ -1,5 +1,7 @@
 import type { LabelInput } from "../types/label";
 import { getPreviewLayout, getProfile } from "../services/profiles";
+import { DEFAULT_PLACEMENTS, adjustBox } from "../services/placement";
+import { centerBox, hasLine2 } from "../services/layout";
 
 // Fallback viewBox for a line-2 SVG that arrives without its own crop. The
 // screw SVG (screw_lowHead.svg) has an A4-sized viewBox (793×1122); the actual
@@ -8,7 +10,6 @@ import { getPreviewLayout, getProfile } from "../services/profiles";
 const SCREW_SVG_VIEWBOX = "32.4 18.7 80.2 16";
 
 const FONT = "Arial, 'Helvetica Neue', Helvetica, sans-serif";
-const ICON_GAP = 0.4; // mm between TX and number halves — keeps them visually tight
 
 function fittingFontSize(text: string, maxW: number, maxH: number): number {
   const len = text.length || 1;
@@ -23,9 +24,15 @@ export function LabelPreview({ label }: LabelPreviewProps) {
   // Per-profile preview layout (boxes + outline) comes straight from the
   // profile registry — same source the 3D generator reads.
   const layout = getPreviewLayout(getProfile(label?.baseProfileId));
-  const ICON_BOX = layout.iconBox;
-  const LINE1_BOX = layout.line1Box;
-  const LINE2_BOX = layout.line2Box;
+  // Every box carries its own placement nudge.
+  const placement = label?.placement ?? DEFAULT_PLACEMENTS;
+  const ICON_BOX = adjustBox(layout.iconBox, placement.icon);
+  const LINE2_BOX = adjustBox(layout.line2Box, placement.line2);
+  // Line 2 off → line 1 sits midway between the two slots (services/layout.ts).
+  // Centred against the profile's default line-2 slot, not the nudged one.
+  const line1Base =
+    label && !hasLine2(label) ? centerBox(layout.line1Box, layout.line2Box) : layout.line1Box;
+  const LINE1_BOX = adjustBox(line1Base, placement.line1);
   const VB = `${-layout.vbMargin} ${-layout.vbMargin} ${layout.width + layout.vbMargin * 2} ${layout.height + layout.vbMargin * 2}`;
 
   function renderLabelShape() {
@@ -34,31 +41,6 @@ export function LabelPreview({ label }: LabelPreviewProps) {
 
   function renderIcon() {
     if (!label) return null;
-
-    if (label.iconText) {
-      const match = label.iconText.match(/^([A-Za-z]+)(\d+.*)$/);
-      const parts = match ? [match[1], match[2]] : [label.iconText];
-      const partH = (ICON_BOX.h - (parts.length > 1 ? ICON_GAP : 0)) / parts.length;
-      return parts.map((part, i) => {
-        const partY = ICON_BOX.y + i * (partH + ICON_GAP);
-        const fs = Math.min((ICON_BOX.w * 1.7) / (part.length || 1), partH);
-        return (
-          <text
-            key={i}
-            x={ICON_BOX.x + ICON_BOX.w / 2}
-            y={partY + partH / 2}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize={fs}
-            fill="#e2e8f0"
-            fontWeight="bold"
-            fontFamily={FONT}
-          >
-            {part}
-          </text>
-        );
-      });
-    }
 
     if (label.iconSvg) {
       const encoded = encodeURIComponent(label.iconSvg);
@@ -114,7 +96,7 @@ export function LabelPreview({ label }: LabelPreviewProps) {
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={fs}
-        fill="#e2e8f0"
+        fill="var(--label-ink)"
         fontWeight="bold"
         fontFamily={FONT}
       >
@@ -166,7 +148,7 @@ export function LabelPreview({ label }: LabelPreviewProps) {
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={fs}
-        fill="#e2e8f0"
+        fill="var(--label-ink)"
         fontWeight="bold"
         fontFamily={FONT}
       >
