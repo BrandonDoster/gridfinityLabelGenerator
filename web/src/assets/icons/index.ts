@@ -46,32 +46,32 @@ function rawFor(file: string): string {
 const DEFS: IconDef[] = [
   // Clipart symbols (left side of the label)
   { id: "hex",          label: "Hex",          file: "hex.svg",          viewBox: "299 276 111 111", kind: "symbol" },
-  { id: "insert",       label: "Insert",       file: "insert.svg",       viewBox: "537 346 75 98",   kind: "symbol" },
-  { id: "lockwasher",   label: "Lock Washer",  file: "lockwasher.svg",   viewBox: "38 564 111 111",  kind: "symbol" },
-  { id: "nut",          label: "Nut",          file: "nut.svg",          viewBox: "307 549 137 120", kind: "symbol" },
-  { id: "nylock",       label: "Nylock",       file: "nylock.svg",       viewBox: "477 549 137 120", kind: "symbol" },
+  { id: "torx",         label: "Torx",         file: "torx.svg",         viewBox: "541 127 112 112", kind: "symbol" },
   { id: "phillips",     label: "Phillips",     file: "phillips.svg",     viewBox: "81 51 112 112",   kind: "symbol" },
   { id: "slot",         label: "Slot",         file: "slot.svg",         viewBox: "35 125 125 113",  kind: "symbol" },
   { id: "robertson",    label: "Robertson",    file: "robertson.svg",    viewBox: "341 505 112 112", kind: "symbol" },
-  { id: "torx",         label: "Torx",         file: "torx.svg",         viewBox: "541 127 112 112", kind: "symbol" },
   { id: "washer",       label: "Washer",       file: "washer.svg",       viewBox: "38 280 112 112",  kind: "symbol" },
   { id: "washer_large", label: "Washer L",     file: "washer_large.svg", viewBox: "48 421 112 112",  kind: "symbol" },
+  { id: "lockwasher",   label: "Lock Washer",  file: "lockwasher.svg",   viewBox: "38 564 111 111",  kind: "symbol" },
+  { id: "insert",       label: "Insert",       file: "insert.svg",       viewBox: "537 346 75 98",   kind: "symbol" },
+  { id: "nut",          label: "Nut",          file: "nut.svg",          viewBox: "307 549 137 120", kind: "symbol" },
+  { id: "nylock",       label: "Nylock",       file: "nylock.svg",       viewBox: "477 549 137 120", kind: "symbol" },
   // Contributed by PixelVengeur — CNCKitchen/gridfinityLabelGenerator#6
   { id: "square_nut",    label: "Square nut",  file: "square_nut.svg",   viewBox: "-11 -11 130 130", kind: "symbol" },
   { id: "t_nut",         label: "T-Nut",       file: "tnut.svg",         viewBox: "15 -35 80 120",   kind: "symbol" },
   { id: "roll-in_t_nut", label: "Roll Nut",    file: "roll-in-tnut.svg", viewBox: "-10 -10 100 170", kind: "symbol" },
 
   // Screw-profile images (line 2). viewBox crops each A4 canvas to the drawing.
-  { id: "btn",      label: "Button Head",   file: "TRP_ButtonHead.svg",               viewBox: "25 1070 93 29",  kind: "line2" },
-  { id: "csk",      label: "Countersunk",   file: "TRP_countersunkHead.svg",          viewBox: "82 924 91 37",   kind: "line2" },
-  { id: "csk-st",   label: "Csk Self-Tap",  file: "TRP_countersunk_selfTapping.svg",  viewBox: "136 255 98 38",  kind: "line2" },
   { id: "cyl",      label: "Cylinder Head", file: "TRP_cylinderHeadScrew.svg",        viewBox: "19 1080 96 31",  kind: "line2" },
-  { id: "cyl-st",   label: "Cyl Self-Tap",  file: "TRP_cylinderHead_selfTapping.svg", viewBox: "133 400 103 35", kind: "line2" },
-  { id: "grub",     label: "Grub Screw",    file: "TRP_grubscrew.svg",                viewBox: "84 265 44 22",   kind: "line2" },
-  { id: "hex-head", label: "Hex Head",      file: "TRP_hexagonHead.svg",              viewBox: "12 1000 93 33",  kind: "line2" },
   { id: "low",      label: "Low Head",      file: "TRP_lowHeadScrew.svg",             viewBox: "28 1042 93 32",  kind: "line2" },
+  { id: "btn",      label: "Button Head",   file: "TRP_ButtonHead.svg",               viewBox: "25 1070 93 29",  kind: "line2" },
   { id: "pan",      label: "Pan Head",      file: "TRP_PanHead.svg",                  viewBox: "72 977 107 31",  kind: "line2" },
+  { id: "csk",      label: "Countersunk",   file: "TRP_countersunkHead.svg",          viewBox: "82 924 91 37",   kind: "line2" },
+  { id: "hex-head", label: "Hex Head",      file: "TRP_hexagonHead.svg",              viewBox: "12 1000 93 33",  kind: "line2" },
+  { id: "cyl-st",   label: "Cyl Self-Tap",  file: "TRP_cylinderHead_selfTapping.svg", viewBox: "133 400 103 35", kind: "line2" },
   { id: "pan-st",   label: "Pan Self-Tap",  file: "TRP_panHead_selfTapping.svg",      viewBox: "134 329 97 33",  kind: "line2" },
+  { id: "csk-st",   label: "Csk Self-Tap",  file: "TRP_countersunk_selfTapping.svg",  viewBox: "136 255 98 38",  kind: "line2" },
+  { id: "grub",     label: "Grub Screw",    file: "TRP_grubscrew.svg",                viewBox: "84 265 44 22",   kind: "line2" },
 ];
 
 /** Every icon, resolved with its raw SVG markup. */
