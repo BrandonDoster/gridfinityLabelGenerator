@@ -6,7 +6,7 @@
 type IconKind = "symbol" | "line2";
 
 interface IconDef {
-  /** Stable id, unique across all kinds. Referenced by the UI pickers and by PredefinedLabel.icon. */
+  /** Stable id, unique across all kinds. Referenced by the UI pickers. */
   id: string;
   /** Label shown under the picker thumbnail. */
   label: string;
