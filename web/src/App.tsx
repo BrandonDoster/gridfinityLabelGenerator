@@ -4,7 +4,7 @@ import { LabelPreview } from "./components/LabelPreview";
 import { SizeBatch } from "./components/SizeBatch";
 import { downloadBatch, downloadBatchPng, downloadSingle, downloadSinglePng } from "./services/api";
 import { saveBlob } from "./services/download";
-import { getProfile, listProfiles } from "./services/profiles";
+import { DEFAULT_PROFILE_ID, getProfile, listProfiles } from "./services/profiles";
 import {
   DEFAULT_PLACEMENT,
   DEFAULT_PLACEMENTS,
@@ -36,7 +36,7 @@ function buildBatchZipFileName(typeToken: string, date = new Date()): string {
 export function App() {
   const [error, setError] = useState("");
   const [previewLabel, setPreviewLabel] = useState<LabelInput | null>(null);
-  const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>("pred");
+  const [baseProfileId, setBaseProfileId] = useState<BaseStlProfileId>(DEFAULT_PROFILE_ID);
   const [embossMode, setEmbossMode] = useState<EmbossMode>("raised");
   const [placement, setPlacement] = useState<Placements>(DEFAULT_PLACEMENTS);
   const profiles = listProfiles();
@@ -211,11 +211,15 @@ export function App() {
       <header>
         <h1>Gridfinity Label Generator</h1>
         <p className="tagline">
-          Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for{" "}
+          Generate custom <strong>3MF</strong> and <strong>PNG</strong> labels for the{" "}
           <a href="https://www.printables.com/model/592545-gridfinity-bin-with-printable-label-by-pred-parame" target="_blank" rel="noopener noreferrer">
-            Gridfinity bins
-          </a>
-          .
+            Pred
+          </a>{" "}
+          and{" "}
+          <a href="https://github.com/CullenJWebb/Cullenect-Labels" target="_blank" rel="noopener noreferrer">
+            Cullenect
+          </a>{" "}
+          Gridfinity bins.
         </p>
       </header>
 

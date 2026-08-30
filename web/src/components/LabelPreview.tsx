@@ -96,7 +96,7 @@ export function LabelPreview({ label }: LabelPreviewProps) {
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={fs}
-        fill="#e2e8f0"
+        fill="var(--label-ink)"
         fontWeight="bold"
         fontFamily={FONT}
       >
@@ -148,7 +148,7 @@ export function LabelPreview({ label }: LabelPreviewProps) {
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={fs}
-        fill="#e2e8f0"
+        fill="var(--label-ink)"
         fontWeight="bold"
         fontFamily={FONT}
       >

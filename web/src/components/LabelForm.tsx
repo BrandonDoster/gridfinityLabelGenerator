@@ -31,8 +31,9 @@ export function LabelForm({
 }: LabelFormProps) {
   const [line1, setLine1] = useState("M3x10");
   const [line2, setLine2] = useState("Screw");
-  const [line2Mode, setLine2Mode] = useState<"text" | "image" | "off">("text");
-  const [selectedLine2Image, setSelectedLine2Image] = useState<string | null>(null);
+  const [line2Mode, setLine2Mode] = useState<"text" | "image" | "off">("image");
+  // Pre-selected so the default Image mode has something to render.
+  const [selectedLine2Image, setSelectedLine2Image] = useState<string | null>("low");
   const [selectedClipart, setSelectedClipart] = useState<string | null>("torx");
   const [labelWidth, setLabelWidth] = useState<1 | 2 | 3>(1);
   // Which download is running, so only that button shows its spinner.
@@ -82,7 +83,7 @@ export function LabelForm({
   const canDownload = busy === null && line1.trim() !== "";
 
   return (
-    <form className="panel" onSubmit={(e) => e.preventDefault()} onFocus={handleFocusEnter}>
+    <form className="panel panel-primary" onSubmit={(e) => e.preventDefault()} onFocus={handleFocusEnter}>
       <div className="panel-header">
         <h2>Design</h2>
         {outputControls}
@@ -104,17 +105,17 @@ export function LabelForm({
           <div className="mode-toggle">
             <button
               type="button"
-              className={line2Mode === "text" ? "active" : ""}
-              onClick={() => setLine2Mode("text")}
-            >
-              Text
-            </button>
-            <button
-              type="button"
               className={line2Mode === "image" ? "active" : ""}
               onClick={() => setLine2Mode("image")}
             >
               Image
+            </button>
+            <button
+              type="button"
+              className={line2Mode === "text" ? "active" : ""}
+              onClick={() => setLine2Mode("text")}
+            >
+              Text
             </button>
             <button
               type="button"

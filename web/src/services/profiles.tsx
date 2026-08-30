@@ -55,7 +55,7 @@ const PRED_LABEL_TRANSFORM = "scale(0.264583) translate(137.19, -1120.59)";
  */
 export const PRED_PROFILE: BaseStlProfileEntry = {
   id: "pred",
-  displayName: "Pred Gridfinity",
+  displayName: "Pred",
   assetPath: "GridfinityBinLabel.stl",
   contentOrigin: { x: 1.5, y: 0.5 },
   iconBox: { x1: 1.5, y1: 0.5, x2: 11, y2: 10 },
@@ -76,28 +76,28 @@ export const PRED_PROFILE: BaseStlProfileEntry = {
         {/* Outer body (main rectangle + side tabs) */}
         <path
           d="M 5.669669,1131.5528 H 1.889764 v -7.5591 a 3.401575,3.401575 0 0 0 -3.401575,-3.4016 H -130.01575 a 3.401575,3.401575 0 0 0 -3.40157,3.4016 v 7.5591 h -3.77991 v 21.5433 h 3.77991 v 7.559 a 3.401575,3.401575 0 0 0 3.40157,3.4016 H -1.511811 a 3.401575,3.401575 0 0 0 3.401575,-3.4016 v -7.559 h 3.779905 z"
-          fill="#1e293b"
-          stroke="#475569"
+          fill="var(--label-body)"
+          stroke="var(--label-edge)"
           strokeWidth="1.89"
         />
         {/* Inner printed area */}
         <path
           d="m -130.01575,1122.4819 a 1.511811,1.511811 0 0 0 -1.51181,1.5118 v 10.7128 a 3.779528,3.779528 0 0 0 2.09974,3.3858 4.724409,4.724409 0 0 1 0,8.4643 3.779528,3.779528 0 0 0 -2.09974,3.3857 v 10.7128 a 1.511811,1.511811 0 0 0 1.51181,1.5118 H -1.511811 A 1.511811,1.511811 0 0 0 0,1160.6551 v -10.7128 a 3.779528,3.779528 0 0 0 -2.099738,-3.3857 4.724409,4.724409 0 0 1 0,-8.4643 A 3.779528,3.779528 0 0 0 0,1134.7065 v -10.7128 a 1.511811,1.511811 0 0 0 -1.511811,-1.5118 z"
-          fill="#0f172a"
+          fill="var(--label-face)"
           stroke="none"
         />
         {/* Left mounting pin */}
         <path
           d="m -128.69291,1142.3244 a 2.834646,2.834646 0 0 0 -5.66929,0 2.834646,2.834646 0 0 0 5.66929,0 z"
           fill="none"
-          stroke="#475569"
+          stroke="var(--label-edge)"
           strokeWidth="1.89"
         />
         {/* Right mounting pin */}
         <path
           d="m 2.834646,1142.3244 a 2.834646,2.834646 0 0 0 -5.669292,0 2.834646,2.834646 0 0 0 5.669292,0 z"
           fill="none"
-          stroke="#475569"
+          stroke="var(--label-edge)"
           strokeWidth="1.89"
         />
       </g>
@@ -132,14 +132,17 @@ const PROFILES: Record<BaseStlProfileId, BaseStlProfileEntry> = {
   cullenect: CULLENECT_PROFILE,
 };
 
-/** Resolve a profile by id; falls back to Pred for unknown / undefined ids. */
+/** Selected on load, and the fallback for an unknown id. */
+export const DEFAULT_PROFILE_ID: BaseStlProfileId = "cullenect";
+
+/** Resolve a profile by id; falls back to the default for unknown / undefined ids. */
 export function getProfile(id: BaseStlProfileId | undefined): BaseStlProfileEntry {
-  return PROFILES[id ?? "pred"] ?? PROFILES.pred;
+  return PROFILES[id ?? DEFAULT_PROFILE_ID] ?? PROFILES[DEFAULT_PROFILE_ID];
 }
 
-/** Profile catalog for UI selectors. Stable order: Pred first, then others. */
+/** Profile catalog for UI selectors. Stable order: the default first. */
 export function listProfiles(): BaseStlProfileEntry[] {
-  return [PROFILES.pred, PROFILES.cullenect];
+  return [PROFILES.cullenect, PROFILES.pred];
 }
 
 // Content boxes are mm with Y up; the preview SVG is Y-down from the top edge.
@@ -168,8 +171,8 @@ export function getPreviewLayout(profile: BaseStlProfileEntry): PreviewLayout {
           height={height}
           rx={0.5}
           ry={0.5}
-          fill="#0f172a"
-          stroke="#475569"
+          fill="var(--label-face)"
+          stroke="var(--label-edge)"
           strokeWidth={0.3}
         />
       )),
